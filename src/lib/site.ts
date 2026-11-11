@@ -44,9 +44,9 @@ export const SITE = {
 	 */
 	giscus: {
 		repo: 'SatyajitPaul/sfdxtalk',
-		repoId: '',
+		repoId: 'R_kgDOVqYvqg',
 		category: 'Comments',
-		categoryId: '',
+		categoryId: 'DIC_kwDOVqYvqs4DK5ku',
 	},
 } as const;
 
