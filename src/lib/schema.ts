@@ -9,6 +9,7 @@
  * Everything is derived from the same frontmatter the page renders visibly —
  * structured data must never say something the page does not.
  */
+import type { Contributor } from './contributors';
 import { docUrl, type Doc } from './docs';
 import { docOgImagePath } from './og-image';
 import { SITE, abs } from './site';
@@ -164,7 +165,7 @@ export function docCrumbs(doc: Doc): Crumb[] {
 }
 
 /** Article page: TechArticle + FAQPage + BreadcrumbList on top of the site graph. */
-export function articleGraph(doc: Doc, pageTitle: string) {
+export function articleGraph(doc: Doc, pageTitle: string, contributors: Contributor[] = []) {
 	const d = doc.data;
 	const path = docUrl(doc);
 	const url = abs(path);
@@ -198,6 +199,11 @@ export function articleGraph(doc: Doc, pageTitle: string) {
 		wordCount: words,
 		timeRequired: `PT${readingMinutes(words)}M`,
 		isAccessibleForFree: true,
+		// Shown on the page under the article (license line and contributors).
+		license: SITE.contentLicense.url,
+		...(contributors.length
+			? { contributor: contributors.map((c) => ({ '@type': 'Person', name: c.name, ...(c.url ? { url: c.url } : {}) })) }
+			: {}),
 		about: [
 			{ '@type': 'Thing', name: category.label, description: category.description, url: abs(categoryUrl(d.category)) },
 			{ '@type': 'SoftwareApplication', name: 'Salesforce Platform', applicationCategory: 'DeveloperApplication', softwareVersion: `${d.release} (API ${d.apiVersion})` },

@@ -1,0 +1,21 @@
+# Weekly dependency updates, grouped to keep review load low.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      astro:
+        patterns: ["astro", "@astrojs/*"]
+      all-others:
+        patterns: ["*"]
+        exclude-patterns: ["astro", "@astrojs/*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

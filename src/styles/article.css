@@ -195,7 +195,29 @@ a.badge:hover { border-color: var(--release); color: var(--release); }
 .copy-page:hover { color: var(--text-strong); border-color: var(--text-muted); }
 .copy-page[data-copied] { color: var(--accent); border-color: var(--accent); }
 
+/* Community: edit/report links, contributors, license */
+.community {
+	padding: var(--space-4) var(--space-5);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	font-size: var(--step--1);
+}
+.community p { margin: 0; }
+.community p + p { margin-top: var(--space-2); }
+.community-lead { color: var(--text-strong); font-weight: 600; }
+.community-links { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+.community-links a { font-weight: 600; }
+.contributors, .license { color: var(--text-muted); }
+
+/* Giscus comments: space reserved so the lazy iframe doesn't shift the footer much. */
+.comments { margin-top: var(--space-7); padding-top: var(--space-5); border-top: 1px solid var(--border); }
+.comments h2 { margin: 0; font-size: var(--step-1); }
+.comments-note { margin: var(--space-2) 0 var(--space-4); color: var(--text-muted); font-size: var(--step--1); }
+.comments-frame { min-height: 14rem; }
+.comments-frame iframe { width: 100%; border: 0; color-scheme: normal; }
+
 @media print {
-	.rail, .pager, .page-actions { display: none !important; }
+	.rail, .pager, .page-actions, .community-links, .comments { display: none !important; }
 	.article-layout, .article { display: block; }
 }

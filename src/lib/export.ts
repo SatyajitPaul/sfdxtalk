@@ -46,6 +46,7 @@ export function docMarkdown(doc: Doc): string {
 		`- Published: ${isoDate(d.published)}`,
 		`- Last updated: ${isoDate(d.lastUpdated)}`,
 		`- Publisher: ${SITE.editorial} (unofficial; not affiliated with or endorsed by Salesforce)`,
+		`- License: ${SITE.contentLicense.name} (${SITE.contentLicense.url})`,
 		'',
 		(doc.body ?? '').trim(),
 		'',

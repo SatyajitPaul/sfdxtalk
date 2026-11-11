@@ -79,7 +79,7 @@ The build also rejects:
 - `related` entries that point to a missing or draft article, or to the article itself.
 - FAQ text containing backticks, HTML, `**bold**`, or Markdown links. Underscores are fine (`Account__c`).
 
-There is **no `author` field**. Every article is credited to "SFDX Talk Editorial" automatically. Do not add personal names or bylines in the body.
+There is **no `author` field**. Every article is published by "SFDX Talk Editorial". People who improve an article through a pull request are credited automatically from git history in a "Contributors" line under the article. Do not add personal names or bylines in the body.
 
 ---
 

@@ -1,0 +1,52 @@
+name: Request or propose an article
+description: Suggest a topic that SFDX Talk should cover, or propose one you'd like to write.
+title: "[New article] "
+labels: [new-article, triage]
+body:
+  - type: input
+    id: topic
+    attributes:
+      label: Topic
+      placeholder: Apex Cursor class for large query results
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Apex
+        - Lightning Web Components
+        - Aura Components
+        - SOQL & SOSL
+        - Salesforce CLI
+        - Metadata
+        - DevOps
+        - Testing
+        - APIs
+        - Integration
+        - Flow
+        - Security
+        - Agentforce
+        - Data Cloud
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What should the article answer?
+      description: The question a developer would search for, and what the official docs leave unclear.
+    validations:
+      required: true
+  - type: textarea
+    id: refs
+    attributes:
+      label: Official references (optional)
+      description: Salesforce docs or release notes the article should be verified against.
+  - type: checkboxes
+    id: write
+    attributes:
+      label: Writing it
+      options:
+        - label: I'd like to write this article myself (see CONTRIBUTING.md and docs/CONTENT-SPEC.md)

@@ -1,0 +1,41 @@
+---
+// Giscus comments backed by GitHub Discussions (SITE.giscus).
+// Nothing third-party loads with the page: src/scripts/article.ts injects the
+// giscus script only when the reader scrolls near this section. Each article
+// maps to one discussion by its id (stable, since slugs are never renamed).
+// Renders nothing until SITE.giscus.repoId and categoryId are set.
+import { SITE } from '../../lib/site';
+
+interface Props {
+	/** Article id, e.g. "apex/trigger-handler-pattern". */
+	term: string;
+}
+const { term } = Astro.props;
+const g = SITE.giscus;
+const enabled = Boolean(g.repoId && g.categoryId);
+const discussions = `${SITE.repo.url}/discussions/categories/${g.category.toLowerCase()}`;
+---
+
+{
+	enabled && (
+		<section class="comments" aria-labelledby="comments-heading" data-pagefind-ignore>
+			<h2 id="comments-heading">Comments</h2>
+			<p class="comments-note">
+				Questions, corrections and tips are welcome. Comments are GitHub Discussions, so you sign in with GitHub.
+			</p>
+			<div
+				class="comments-frame"
+				data-giscus
+				data-repo={g.repo}
+				data-repo-id={g.repoId}
+				data-category={g.category}
+				data-category-id={g.categoryId}
+				data-term={term}
+			>
+				<noscript>
+					<a href={discussions}>Read and join the discussion on GitHub</a>
+				</noscript>
+			</div>
+		</section>
+	)
+}

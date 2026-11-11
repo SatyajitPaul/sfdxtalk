@@ -1,0 +1,24 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+The articles in src/content/ and the article images in src/assets/docs/ are
+licensed under the Creative Commons Attribution 4.0 International License.
+
+Full legal code: https://creativecommons.org/licenses/by/4.0/legalcode
+Summary:         https://creativecommons.org/licenses/by/4.0/
+
+You may share and adapt this content for any purpose, including commercially,
+as long as you give appropriate credit, link to the license, and indicate if
+changes were made. Suggested credit:
+
+    "<Article title>" by SFDX Talk Editorial and contributors,
+    https://sfdxtalk.com/docs/<category>/<slug>/, licensed under CC BY 4.0.
+
+By submitting a contribution to this content, you agree to license it under
+CC BY 4.0.
+
+Short quotations from official Salesforce documentation are included under fair
+use with attribution and remain the property of their owners. Salesforce and
+related marks are trademarks of Salesforce, Inc. SFDX Talk is not affiliated
+with, endorsed by, or sponsored by Salesforce, Inc.
+
+The site's source code is licensed separately under the MIT License; see LICENSE.

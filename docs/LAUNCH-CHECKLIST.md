@@ -37,3 +37,55 @@ Test one live article URL, for example `https://sfdxtalk.com/docs/apex/trigger-h
 
 - [ ] Run [PageSpeed Insights](https://pagespeed.web.dev/) on the home page and one article. Lighthouse CI tests a local server without the CDN or `_headers`, so this is the first real-network measurement.
 - [ ] One week later: check Search Console → Pages for indexing problems and Sitemaps for a "Success" status.
+
+## Going public (community repo)
+
+Do these in order. Merging to `master` deploys, so the protection must be on before outside pull requests arrive.
+
+**Before switching to public**
+
+- [ ] Merge the `community` branch (licenses, CONTRIBUTING, templates, CODEOWNERS, Dependabot, edit links, comments code).
+- [ ] Optional: in GitHub → Settings → Emails, turn on **Keep my email addresses private** and **Block command line pushes that expose my email**, then `git config --global user.email <id>+<username>@users.noreply.github.com`. Existing commits keep the address they were made with.
+
+**Switch visibility**
+
+- [ ] Settings → General → Danger Zone → **Change visibility → Public**.
+
+**Protect `master`** (Settings → Rules → Rulesets → New branch ruleset)
+
+- [ ] Name `master`, enforcement **Active**, target **Default branch**.
+- [ ] **Restrict deletions** and **Block force pushes**.
+- [ ] **Require a pull request before merging**: required approvals 0 (you are the only maintainer; your own PRs can't be approved by you), **Require review from Code Owners** off for now, **Dismiss stale approvals** on.
+- [ ] **Require status checks to pass**: add `check` (the CI job), and **Require branches to be up to date**.
+- [ ] Bypass list: add yourself (Repository admin) only if you want to push hotfixes directly. Leaving it empty is safer.
+
+**Actions** (Settings → Actions → General)
+
+- [ ] **Require approval for all external contributors** (fork pull request workflows).
+- [ ] Workflow permissions: **Read repository contents and packages permissions**; leave "Allow GitHub Actions to create and approve pull requests" off.
+
+**Security** (Settings → Advanced Security / Code security)
+
+- [ ] **Private vulnerability reporting**: on (SECURITY.md points to it).
+- [ ] **Dependabot alerts** and **Dependabot security updates**: on (version updates come from `.github/dependabot.yml`).
+- [ ] **Secret scanning** and **Push protection**: on.
+
+**Discussions and comments**
+
+- [ ] Settings → General → Features → **Discussions**: on.
+- [ ] Discussions → categories → new category **Comments**, format **Announcement** (only maintainers and giscus create threads; anyone can reply).
+- [ ] Install the giscus app on this repository only: https://github.com/apps/giscus.
+- [ ] On https://giscus.app enter `SatyajitPaul/sfdxtalk`, choose mapping "specific term" and category **Comments**, then copy `data-repo-id` and `data-category-id` into `SITE.giscus` in `src/lib/site.ts`. Comments appear on the next deploy.
+- [ ] Discussions → **Moderation**: consider limiting interactions for new accounts if spam appears (Settings → Moderation options → Interaction limits).
+
+**Labels** used by the issue forms (Issues → Labels): `content`, `new-article`, `site`, `triage`.
+
+**Cloudflare** (Workers & Pages → sfdxtalk → Settings → Build)
+
+- [ ] Production branch is `master` (confirmed).
+- [ ] **Enable Preview Builds**: off unless you want preview URLs for your own branches.
+- [ ] Build variables: none needed. Never add secrets here; merged code can read them during a build.
+
+**After going public**
+
+- [ ] From a second GitHub account (or ask a friend), open a test pull request from a fork: CI should wait for approval, no Cloudflare deploy should happen, and **Merge** should stay blocked until CI passes.

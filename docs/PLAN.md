@@ -212,6 +212,6 @@ Metadata:
 1. ~~Theme~~ — **decided 2026-11-11:** dark default + respect OS `prefers-color-scheme` + manual toggle.
 2. ~~Search~~ — **decided 2026-11-11:** Pagefind, lazy-loaded on search focus.
 3. ~~Fonts~~ — **decided 2026-11-11:** system font stack, no web fonts.
-4. ~~Author model~~ — **decided 2026-11-11:** single "SFDX Talk Editorial" byline. JSON-LD `author` = the `Organization`. An optional `reviewedBy` field can be added later if real human reviewers join.
+4. ~~Author model~~ — **decided 2026-11-11:** single "SFDX Talk Editorial" byline. JSON-LD `author` = the `Organization`. An optional `reviewedBy` field can be added later if real human reviewers join. **Updated 2026-11-11:** the repo is public and community-maintained; contributors from git history are listed under each article and as TechArticle `contributor` (Person), with `license` = CC BY 4.0. Comments: Giscus on GitHub Discussions, loaded only when the reader nears the end of the article.
 
 All open decisions are resolved.

@@ -20,7 +20,48 @@ export const SITE = {
 	ogImage: { path: '/og-default.png', width: 1200, height: 630, alt: 'SFDX Talk — unofficial Salesforce developer documentation' },
 	/** Public profile URLs for Organization `sameAs`. Add real profiles only. */
 	sameAs: [] as string[],
+
+	/** Public GitHub repository: "Edit this page", history and issue links. */
+	repo: {
+		url: 'https://github.com/SatyajitPaul/sfdxtalk',
+		branch: 'master',
+	},
+
+	/** Articles are CC BY 4.0 (LICENSE-CONTENT); site code is MIT (LICENSE). */
+	contentLicense: { name: 'CC BY 4.0', url: 'https://creativecommons.org/licenses/by/4.0/' },
+
+	/**
+	 * Git author names whose commits are credited to SFDX Talk Editorial rather
+	 * than listed as community contributors (src/lib/contributors.ts).
+	 * Names only — never put email addresses here.
+	 */
+	editorialAuthors: ['Satyajit Paul'] as string[],
+
+	/**
+	 * Giscus comments (GitHub Discussions on the repo above). Comments stay off
+	 * until repoId and categoryId are filled in: get both from https://giscus.app
+	 * after enabling Discussions and installing the giscus app on the repo.
+	 */
+	giscus: {
+		repo: 'SatyajitPaul/sfdxtalk',
+		repoId: '',
+		category: 'Comments',
+		categoryId: '',
+	},
 } as const;
+
+/** GitHub URLs for one article's source file. */
+export function repoLinks(docId: string) {
+	const path = `src/content/docs/${docId}.md`;
+	const { url, branch } = SITE.repo;
+	return {
+		edit: `${url}/edit/${branch}/${path}`,
+		history: `${url}/commits/${branch}/${path}`,
+		/** Prefilled "Report a problem" issue form (.github/ISSUE_TEMPLATE/article-issue.yml). */
+		issue: (pageUrl: string, title: string) =>
+			`${url}/issues/new?${new URLSearchParams({ template: 'article-issue.yml', title: `[Article] ${title}`, page: pageUrl })}`,
+	};
+}
 
 /** Absolute URL for a root-relative path. */
 export const abs = (path: string): string => new URL(path, SITE.url).href;
