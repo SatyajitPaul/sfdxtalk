@@ -194,6 +194,10 @@ public with sharing class AccountTriggerHandler { }
 - No shell prompts (`$`) in commands; output goes in a separate block.
 - Code must compile/run. Use `with sharing` / `WITH USER_MODE` unless the point is otherwise.
 
+### Diagrams
+
+A ` ```mermaid ` fence is rendered to an inline SVG at build time (no client JavaScript). Supported: `flowchart`/`graph`, `sequenceDiagram`, `stateDiagram`, `classDiagram` and `erDiagram`. A diagram that fails to parse fails the build. Quote node labels (`A["Step 1: Load"]`) so they also become the diagram's accessible name, and keep the steps in the surrounding prose too: the diagram supports the text, it doesn't replace it.
+
 ### Callouts
 
 ```markdown

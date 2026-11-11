@@ -324,6 +324,19 @@ main { flex: 1; }
 }
 .prose tr:last-child td { border-bottom: 0; }
 
+/* Mermaid diagrams, rendered to inline SVG at build time (src/markdown/mermaid.ts). */
+.diagram {
+	margin: var(--space-5) 0 0;
+	padding: var(--space-2); /* the SVG carries its own inner padding */
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--bg);
+	overflow-x: auto;
+	text-align: center;
+}
+/* min-width is set per diagram in mermaid.ts so labels stay readable. */
+.diagram svg { max-width: 100%; height: auto; vertical-align: middle; }
+
 /* ---------- 5. Code blocks ------------------------------------------------ */
 .code-block {
 	margin: var(--space-5) 0 0;

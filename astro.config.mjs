@@ -5,6 +5,7 @@ import pagefindIndex from './src/integrations/pagefind.ts';
 import serviceWorker from './src/integrations/service-worker.ts';
 import { sfdxMarkdown } from './src/markdown/callouts.ts';
 import { codeBlocks } from './src/markdown/code-blocks.ts';
+import { mermaidDiagrams } from './src/markdown/mermaid.ts';
 import { sfdxDark, sfdxLight } from './src/markdown/shiki-themes.ts';
 
 // Static build served by Cloudflare Workers static assets.
@@ -36,8 +37,10 @@ export default defineConfig({
 	markdown: {
 		processor: satteri({
 			// Heading ids first so the anchor links in sfdxMarkdown can use them.
-			hastPlugins: [satteriHeadingIdsPlugin(), sfdxMarkdown()],
+			hastPlugins: [satteriHeadingIdsPlugin(), sfdxMarkdown(), mermaidDiagrams()],
 		}),
+		// Mermaid fences skip Shiki; src/markdown/mermaid.ts renders them to SVG.
+		syntaxHighlight: { type: 'shiki', excludeLangs: ['mermaid'] },
 		shikiConfig: {
 			themes: { light: sfdxLight, dark: sfdxDark },
 			// Emit CSS variables only; src/styles/global.css picks the theme.
