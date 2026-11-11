@@ -136,3 +136,4 @@ flowchart TD
 1. **Triggering Escalation**: The bot executes a Transfer Dialog or emits an `EscalationEvent`.
 2. **Omni-Channel Evaluation**: Salesforce invokes an **Omni-Channel Flow** that checks agent capacity, operating hours, and required routing skills (e.g., Tier 2 Billing).
 3. **Context Preservation**: The human agent receives the incoming `MessagingSession` in the Service Console with the **complete historical transcript** and customer record automatically linked, eliminating customer repetition.
+

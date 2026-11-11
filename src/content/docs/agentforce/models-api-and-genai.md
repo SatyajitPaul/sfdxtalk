@@ -148,3 +148,4 @@ The Models API unifies access across premier industry foundation models and priv
 | **Anthropic** | `sfdc_ai__DefaultAnthropicClaude35Sonnet`<br>`sfdc_ai__DefaultAnthropicClaude3Haiku` | Long-context document analysis, nuanced writing, contract review |
 | **Google** | `sfdc_ai__DefaultGoogleGemini15Pro`<br>`sfdc_ai__DefaultGoogleGemini15Flash` | High-volume multimodal tasks, document extraction, low-latency summarization |
 | **BYOM (AWS)** | Custom endpoints via Amazon Bedrock & SageMaker | Proprietary fine-tuned enterprise models hosted in private corporate VPCs |
+
