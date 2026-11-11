@@ -1,0 +1,20 @@
+---
+// Placeholder home page. Replaced in phase 4 (templates).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getDocs, docUrl } from '../lib/docs';
+
+const docs = await getDocs();
+---
+
+<BaseLayout
+	title="SFDX Talk — Unofficial Salesforce Developer Documentation"
+	description="Unofficial, developer-friendly Salesforce documentation. Not affiliated with or endorsed by Salesforce."
+>
+	<div class="page-narrow">
+		<h1>SFDX Talk</h1>
+		<p>Unofficial Salesforce documentation for developers.</p>
+		<ul>
+			{docs.map((d) => <li><a href={docUrl(d)}>{d.data.title}</a></li>)}
+		</ul>
+	</div>
+</BaseLayout>

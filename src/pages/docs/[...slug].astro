@@ -1,0 +1,49 @@
+---
+// TEMPORARY article route to preview the design system.
+// Replaced by the full article template (3-column layout, TOC, JSON-LD) in phase 4–5.
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getDocs, type Doc } from '../../lib/docs';
+import { CATEGORIES } from '../../lib/taxonomy';
+
+export async function getStaticPaths() {
+	const docs = await getDocs();
+	return docs.map((doc) => ({ params: { slug: doc.id }, props: { doc } }));
+}
+
+const { doc } = Astro.props as { doc: Doc };
+const { Content } = await render(doc);
+const d = doc.data;
+const iso = (date: Date) => date.toISOString().slice(0, 10);
+const human = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
+---
+
+<BaseLayout title={`${d.title} — SFDX Talk`} description={d.description} noindex>
+	<article class="page">
+		<div class="prose">
+			<p style="font-size: var(--step--1); color: var(--text-muted)">{CATEGORIES[d.category].label}</p>
+			<h1>{d.title}</h1>
+			<p style="display: flex; flex-wrap: wrap; gap: .5rem; align-items: center">
+				<span class="badge badge-release">{d.release}</span>
+				<span class="badge">API {d.apiVersion}</span>
+				<span style="font-size: var(--step--1); color: var(--text-muted)">
+					Last updated <time datetime={iso(d.lastUpdated)}>{human(d.lastUpdated)}</time>
+				</span>
+			</p>
+			<div class="tldr">
+				<p class="tldr-label">Quick answer</p>
+				<p>{d.tldr}</p>
+			</div>
+			<Content />
+			<h2 id="faq">Frequently asked questions</h2>
+			{
+				d.faq.map((f) => (
+					<>
+						<h3>{f.q}</h3>
+						<p>{f.a}</p>
+					</>
+				))
+			}
+		</div>
+	</article>
+</BaseLayout>

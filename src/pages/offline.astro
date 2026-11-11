@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+	title="You're offline — SFDX Talk"
+	description="SFDX Talk is not reachable right now. Pages you visited before are still available."
+	noindex
+>
+	<div class="page-narrow">
+		<h1>You're offline</h1>
+		<p>This page isn't saved on your device yet. Pages you've visited before still work without a connection.</p>
+		<ul id="saved-pages" class="saved-pages" hidden></ul>
+		<p><a href="/">Try the home page</a></p>
+	</div>
+</BaseLayout>
+
+<script is:inline>
+	// List pages the service worker has cached so readers can keep going offline.
+	(async () => {
+		try {
+			const list = document.getElementById('saved-pages');
+			const names = (await caches.keys()).filter((n) => n.startsWith('pages-'));
+			const urls = new Set();
+			for (const name of names) {
+				for (const req of await (await caches.open(name)).keys()) {
+					const path = new URL(req.url).pathname;
+					if (path.startsWith('/docs/')) urls.add(path);
+				}
+			}
+			for (const path of [...urls].sort()) {
+				const li = document.createElement('li');
+				const a = document.createElement('a');
+				a.href = path;
+				a.textContent = path.replace(/^\/docs\/|\/$/g, '').replace(/[-/]/g, ' ');
+				li.append(a);
+				list.append(li);
+			}
+			if (urls.size) list.hidden = false;
+		} catch {}
+	})();
+</script>

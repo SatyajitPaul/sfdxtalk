@@ -1,0 +1,82 @@
+---
+/**
+ * Shell for every page: <head> metadata, theme, icons, service worker,
+ * header and footer. SEO structured data is added in phase 5.
+ */
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+	title: string;
+	description: string;
+	/** Path for the canonical URL; defaults to the current path. */
+	canonicalPath?: string;
+	noindex?: boolean;
+}
+
+const { title, description, canonicalPath = Astro.url.pathname, noindex = false } = Astro.props;
+const canonical = new URL(canonicalPath, Astro.site);
+const isProd = import.meta.env.PROD;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={canonical} />
+		{noindex && <meta name="robots" content="noindex" />}
+
+		<meta name="color-scheme" content="dark light" />
+		<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)" />
+		<meta name="theme-color" content="#181c20" media="(prefers-color-scheme: dark)" />
+		<!-- Runs before first paint: applies the saved theme and marks JS as available. -->
+		<script is:inline>
+			(() => {
+				const d = document.documentElement;
+				d.classList.add('js');
+				try {
+					const t = localStorage.getItem('theme');
+					if (t === 'light' || t === 'dark') {
+						d.dataset.theme = t;
+						const c = t === 'dark' ? '#181c20' : '#f6f4ef';
+						document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', c));
+					}
+				} catch {}
+			})();
+		</script>
+
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="manifest" href="/manifest.webmanifest" />
+
+		<slot name="head" />
+
+		{
+			isProd && (
+				<script is:inline>
+					if ('serviceWorker' in navigator) {
+						addEventListener('load', () => {
+							const go = () => navigator.serviceWorker.register('/sw.js').catch(() => {});
+							'requestIdleCallback' in window ? requestIdleCallback(go) : setTimeout(go, 1);
+						});
+					}
+				</script>
+			)
+		}
+	</head>
+	<body>
+		<a class="skip-link" href="#main">Skip to content</a>
+		<Header />
+		<main id="main" tabindex="-1">
+			<slot />
+		</main>
+		<Footer />
+		<script>
+			import '../scripts/site';
+		</script>
+	</body>
+</html>
