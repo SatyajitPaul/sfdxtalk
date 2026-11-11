@@ -7,8 +7,12 @@
 	"name": "sfdxtalk",
 	"compatibility_date": "2026-11-09",
 	"assets": {
-		// The path to the directory containing the `index.html` file to be served at `/`
-		"directory": "./public"
+		// Astro's static build output (`pnpm build`)
+		"directory": "./dist",
+		// /docs/foo/ serves dist/docs/foo/index.html; /docs/foo redirects to /docs/foo/
+		"html_handling": "auto-trailing-slash",
+		// Unknown paths serve dist/404.html with a 404 status
+		"not_found_handling": "404-page"
 	},
 	"observability": {
 		"enabled": true

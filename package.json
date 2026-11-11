@@ -2,10 +2,15 @@
 	"name": "sfdxtalk",
 	"version": "0.0.0",
 	"private": true,
+	"type": "module",
 	"scripts": {
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
-		"start": "wrangler dev"
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "astro build && wrangler dev",
+		"deploy": "astro build && wrangler deploy"
+	},
+	"dependencies": {
+		"astro": "7.4.8"
 	},
 	"devDependencies": {
 		"wrangler": "^4.159.0"

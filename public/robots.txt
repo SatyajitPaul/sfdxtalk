@@ -1,0 +1,32 @@
+# SFDX Talk — unofficial Salesforce developer documentation.
+# All crawlers, including AI search and AI assistant crawlers, are welcome.
+#
+# NOTE: Cloudflare can block AI crawlers and override this file at the edge.
+# Keep "AI Crawl Control" blocking and Managed robots.txt OFF for sfdxtalk.com.
+
+User-agent: *
+Allow: /
+
+# Search engines
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Applebot
+User-agent: DuckDuckBot
+Allow: /
+
+# AI search and assistant crawlers
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: CCBot
+User-agent: meta-externalagent
+Allow: /
+
+Sitemap: https://sfdxtalk.com/sitemap-index.xml
