@@ -1,0 +1,43 @@
+---
+// Tag index: /tags/ — every tag used by a published article, with counts.
+import '../../styles/hubs.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { getDocs } from '../../lib/docs';
+import { latestUpdate } from '../../lib/export';
+import { TAGS_INDEX_URL, byTag, tagUrl, tagsIndexable } from '../../lib/hubs';
+import { pageGraph, type Crumb } from '../../lib/schema';
+
+const docs = await getDocs();
+const groups = byTag(docs);
+const path = TAGS_INDEX_URL;
+const title = 'Salesforce Developer Topics by Tag | SFDX Talk';
+const description =
+	'Every topic tag used on SFDX Talk, with the number of unofficial Salesforce developer guides filed under each one.';
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Tags', path },
+];
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	noindex={!tagsIndexable(groups)}
+	jsonLd={pageGraph({ path, title, description, type: 'CollectionPage', crumbs, modified: latestUpdate(docs) })}
+>
+	<div class="page-narrow">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>Tags</h1>
+		<p>Topics covered by SFDX Talk articles. The number after each tag is how many articles use it.</p>
+		<ul class="tag-list">
+			{
+				groups.map((g) => (
+					<li>
+						<a href={tagUrl(g.tag)}>{g.tag}</a> <span class="hub-count">({g.docs.length})</span>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</BaseLayout>

@@ -7,7 +7,10 @@
 		"dev": "astro dev",
 		"build": "astro build",
 		"preview": "astro build && wrangler dev",
-		"deploy": "astro build && wrangler deploy"
+		"deploy": "astro build && wrangler deploy && node scripts/indexnow.mjs",
+		"indexnow": "node scripts/indexnow.mjs",
+		"check:budget": "node scripts/check-budget.mjs",
+		"check:lighthouse": "lhci autorun"
 	},
 	"dependencies": {
 		"@astrojs/markdown-satteri": "0.4.7",
@@ -16,6 +19,8 @@
 		"sharp": "0.35.5"
 	},
 	"devDependencies": {
+		"@lhci/cli": "^0.16.0",
+		"pagefind": "^1.6.0",
 		"wrangler": "^4.159.0"
 	}
 }

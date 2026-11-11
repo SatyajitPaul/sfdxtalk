@@ -1,16 +1,32 @@
 ---
 import { Image } from 'astro:assets';
 import logo from '../assets/logo.png';
+import Search from './Search.astro';
+
+// The home page has its own large search box, so the header one is left out there.
+const showSearch = Astro.url.pathname !== '/';
 ---
 
 <header class="site-header">
 	<div class="site-header-inner">
-		<a class="brand" href="/" aria-label="SFDX Talk home">
+		<a class="brand" href="/">
 			<Image src={logo} alt="" width={32} height={32} densities={[1, 2]} format="webp" loading="eager" decoding="async" />
 			<span>SFDX Talk</span>
 			<span class="brand-tag">Unofficial</span>
 		</a>
 		<div class="header-actions">
+			{
+				showSearch && (
+					<button class="icon-btn search-open" type="button" data-search-open aria-label="Search" aria-haspopup="dialog" aria-keyshortcuts="/">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+							<circle cx="11" cy="11" r="7" />
+							<path d="m20 20-3.8-3.8" />
+						</svg>
+						<span>Search</span>
+						<kbd aria-hidden="true">/</kbd>
+					</button>
+				)
+			}
 			<button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-label="Switch color theme">
 				<svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path>
@@ -22,4 +38,16 @@ import logo from '../assets/logo.png';
 			</button>
 		</div>
 	</div>
+	{
+		showSearch && (
+			// Opened by src/scripts/search.ts; a modal <dialog> traps focus, closes on Escape
+			// and returns focus to the button on its own.
+			<dialog class="search-dialog" aria-label="Search">
+				<Search />
+				<form class="search-dialog-close" method="dialog">
+					<button type="submit">Close</button>
+				</form>
+			</dialog>
+		)
+	}
 </header>

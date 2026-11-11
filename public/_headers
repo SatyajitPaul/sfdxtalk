@@ -35,3 +35,30 @@
 
 /icon-*
   Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/og-default.png
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+# Per-article share images, built from frontmatter
+/og/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+# Machine-readable copies of the content (docs/PLAN.md §8).
+# The Markdown copy of an article names its HTML page as canonical, so search
+# engines index the HTML page and never treat the copy as duplicate content.
+/docs/*.md
+  Content-Type: text/markdown; charset=utf-8
+  Link: <https://sfdxtalk.com/docs/:splat/>; rel="canonical"
+
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+
+/llms-full.txt
+  Content-Type: text/plain; charset=utf-8
+  X-Robots-Tag: noindex
+
+/sitemap.xml
+  Content-Type: application/xml; charset=utf-8
+
+/feed.xml
+  Content-Type: application/atom+xml; charset=utf-8

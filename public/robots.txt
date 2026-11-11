@@ -29,4 +29,4 @@ User-agent: CCBot
 User-agent: meta-externalagent
 Allow: /
 
-Sitemap: https://sfdxtalk.com/sitemap-index.xml
+Sitemap: https://sfdxtalk.com/sitemap.xml

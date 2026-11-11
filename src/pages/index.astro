@@ -1,20 +1,91 @@
 ---
-// Placeholder home page. Replaced in phase 4 (templates).
+// Home page (docs/PLAN.md §5): logo, search, tagline, category links and a
+// random article card.
+import { Image } from 'astro:assets';
+import logo from '../assets/logo.png';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Search from '../components/Search.astro';
 import { getDocs, docUrl } from '../lib/docs';
+import { byCategory, latestUpdate } from '../lib/export';
+import { categoryUrl, pageGraph } from '../lib/schema';
+import { SITE } from '../lib/site';
+import { CATEGORIES } from '../lib/taxonomy';
 
-const docs = await getDocs();
+const docs = await getDocs(); // newest update first
+const groups = byCategory(docs);
+
+// The card is rendered at build time with the newest article, so it is
+// crawlable and works without JS. An inline script then swaps in a random
+// article from this list; capped so the home page stays small.
+const CARD_POOL = 24;
+const cards = docs.slice(0, CARD_POOL).map((d) => ({
+	u: docUrl(d),
+	t: d.data.title,
+	d: d.data.description,
+	c: CATEGORIES[d.data.category].label,
+	r: d.data.release,
+}));
+const first = cards[0];
 ---
 
 <BaseLayout
-	title="SFDX Talk — Unofficial Salesforce Developer Documentation"
-	description="Unofficial, developer-friendly Salesforce documentation. Not affiliated with or endorsed by Salesforce."
+	title={SITE.title}
+	description={SITE.description}
+	jsonLd={pageGraph({ path: '/', title: SITE.title, description: SITE.description, modified: latestUpdate(docs) })}
 >
-	<div class="page-narrow">
-		<h1>SFDX Talk</h1>
-		<p>Unofficial Salesforce documentation for developers.</p>
-		<ul>
-			{docs.map((d) => <li><a href={docUrl(d)}>{d.data.title}</a></li>)}
-		</ul>
+	<div class="home">
+		<header class="home-hero">
+			<Image src={logo} alt="" width={112} height={112} densities={[1, 2]} format="webp" loading="eager" fetchpriority="high" />
+			<h1>SFDX Talk</h1>
+			<p class="home-tagline">Unofficial Salesforce documentation for developers.</p>
+		</header>
+
+		<Search autofocus />
+
+		<nav class="home-categories" aria-label="Categories">
+			<ul>
+				{
+					groups.map((g) => (
+						<li>
+							<a href={categoryUrl(g.category)}>{CATEGORIES[g.category].label}</a>
+						</li>
+					))
+				}
+			</ul>
+		</nav>
+
+		{
+			first && (
+				<section class="home-random" aria-labelledby="random-heading">
+					<h2 id="random-heading">Random article</h2>
+					<a class="doc-card" href={first.u} data-random-card>
+						<span class="doc-card-meta">
+							<span data-card="c">{first.c}</span>
+							<span class="badge badge-release" data-card="r">{first.r}</span>
+						</span>
+						<span class="doc-card-title" data-card="t">{first.t}</span>
+						<span class="doc-card-text" data-card="d">{first.d}</span>
+					</a>
+					{
+						cards.length > 1 && (
+							<>
+								<script is:inline type="application/json" id="random-cards" set:html={JSON.stringify(cards).replace(/</g, '\\u003c')} />
+								<script is:inline>
+									(() => {
+										try {
+											const all = JSON.parse(document.getElementById('random-cards').textContent);
+											const pick = all[Math.floor(Math.random() * all.length)];
+											const card = document.querySelector('[data-random-card]');
+											card.href = pick.u;
+											card.querySelectorAll('[data-card]').forEach((el) => (el.textContent = pick[el.dataset.card]));
+										} catch {}
+									})();
+								</script>
+							</>
+						)
+					}
+				</section>
+			)
+		}
 	</div>
 </BaseLayout>

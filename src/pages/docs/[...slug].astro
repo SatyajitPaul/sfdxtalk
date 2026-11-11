@@ -1,49 +1,150 @@
 ---
-// TEMPORARY article route to preview the design system.
-// Replaced by the full article template (3-column layout, TOC, JSON-LD) in phase 4–5.
+// Article page (docs/PLAN.md §5): category tree · content · "On this page".
+// Everything visible here comes from the same frontmatter as the JSON-LD.
+//
+// Search indexing: <article data-pagefind-body> holds the H1, quick answer,
+// body and FAQ. Navigation inside it is marked data-pagefind-ignore; the meta
+// line is ignored as text but still supplies the search filters.
 import { render } from 'astro:content';
+import '../../styles/article.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getDocs, type Doc } from '../../lib/docs';
-import { CATEGORIES } from '../../lib/taxonomy';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import DocsNav from '../../components/article/DocsNav.astro';
+import Toc from '../../components/article/Toc.astro';
+import { FAQ_SECTION, buildToc, neighbours } from '../../lib/article';
+import { docUrl, getDocs, type Doc } from '../../lib/docs';
+import { byCategory, docMarkdownUrl, isoDate } from '../../lib/export';
+import { releaseUrl, tagUrl } from '../../lib/hubs';
+import { docOgImageAlt, docOgImagePath } from '../../lib/og-image';
+import { articleGraph, categoryUrl, docCrumbs, readingMinutes, wordCount } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+import { CATEGORIES, type Category } from '../../lib/taxonomy';
+
+type Groups = { category: Category; docs: Doc[] }[];
 
 export async function getStaticPaths() {
 	const docs = await getDocs();
-	return docs.map((doc) => ({ params: { slug: doc.id }, props: { doc } }));
+	const byId = new Map(docs.map((doc) => [doc.id, doc]));
+	const groups = byCategory(docs);
+	return docs.map((doc) => ({
+		params: { slug: doc.id },
+		// getDocs() has already checked that every related id is published.
+		props: { doc, groups, related: doc.data.related.map((id) => byId.get(id)!) },
+	}));
 }
 
-const { doc } = Astro.props as { doc: Doc };
-const { Content } = await render(doc);
+const { doc, groups, related } = Astro.props as { doc: Doc; groups: Groups; related: Doc[] };
+const { Content, headings } = await render(doc);
 const d = doc.data;
-const iso = (date: Date) => date.toISOString().slice(0, 10);
+const category = CATEGORIES[d.category];
+const pageTitle = `${d.title} — SFDX Talk`;
+const minutes = readingMinutes(wordCount(doc.body ?? ''));
 const human = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
+const level = d.level[0].toUpperCase() + d.level.slice(1);
+const { prev, next } = neighbours(groups.find((g) => g.category === d.category)?.docs ?? [], doc);
 ---
 
-<BaseLayout title={`${d.title} — SFDX Talk`} description={d.description} noindex>
-	<article class="page">
-		<div class="prose">
-			<p style="font-size: var(--step--1); color: var(--text-muted)">{CATEGORIES[d.category].label}</p>
-			<h1>{d.title}</h1>
-			<p style="display: flex; flex-wrap: wrap; gap: .5rem; align-items: center">
-				<span class="badge badge-release">{d.release}</span>
-				<span class="badge">API {d.apiVersion}</span>
-				<span style="font-size: var(--step--1); color: var(--text-muted)">
-					Last updated <time datetime={iso(d.lastUpdated)}>{human(d.lastUpdated)}</time>
-				</span>
-			</p>
-			<div class="tldr">
-				<p class="tldr-label">Quick answer</p>
-				<p>{d.tldr}</p>
+<BaseLayout
+	title={pageTitle}
+	description={d.description}
+	jsonLd={articleGraph(doc, pageTitle)}
+	article={{ published: d.published, modified: d.lastUpdated, section: category.label, tags: d.tags }}
+	markdownPath={docMarkdownUrl(doc)}
+	ogImage={{ path: docOgImagePath(doc), alt: docOgImageAlt(doc) }}
+>
+	<div class="page article-layout">
+		<DocsNav groups={groups} current={doc} />
+
+		<article class="article" data-pagefind-body>
+			<header class="article-header">
+				<div data-pagefind-ignore><Breadcrumbs crumbs={docCrumbs(doc)} /></div>
+				<h1>{d.title}</h1>
+				<div class="article-meta" data-pagefind-ignore>
+					<p class="doc-meta">
+						<a class="badge badge-release" href={releaseUrl(d.release)} data-pagefind-filter="release">{d.release}</a>
+						<span class="badge">API {d.apiVersion}</span>
+						<span class="badge" data-pagefind-filter={`level:${d.level}`}>{level}</span>
+						<span>Last updated <time datetime={isoDate(d.lastUpdated)}>{human(d.lastUpdated)}</time></span>
+						<span>{minutes} min read</span>
+						<span><a href={categoryUrl(d.category)} data-pagefind-filter="category" data-pagefind-meta="category">{category.label}</a></span>
+						<span>By {SITE.editorial}</span>
+					</p>
+					<ul class="doc-tags" aria-label="Tags">
+						{
+							d.tags.map((tag) => (
+								<li>
+									<a href={tagUrl(tag)} rel="tag" data-pagefind-filter="tag">{tag}</a>
+								</li>
+							))
+						}
+					</ul>
+				</div>
+				<div class="tldr">
+					<p class="tldr-label" data-pagefind-ignore>Quick answer</p>
+					<p>{d.tldr}</p>
+				</div>
+			</header>
+
+			<Toc items={buildToc(headings)} />
+
+			<div class="article-body">
+				<div class="prose">
+					<Content />
+					<h2 id={FAQ_SECTION.id}>{FAQ_SECTION.text}</h2>
+					{
+						d.faq.map((f) => (
+							<>
+								<h3>{f.q}</h3>
+								<p>{f.a}</p>
+							</>
+						))
+					}
+				</div>
+
+				<footer class="article-footer" data-pagefind-ignore>
+					{
+						related.length > 0 && (
+							<section aria-labelledby="related-articles">
+								<h2 id="related-articles">Related articles</h2>
+								<ul class="related-list">
+									{related.map((r) => (
+										<li>
+											<a href={docUrl(r)}>{r.data.title}</a>
+											<p>{r.data.description}</p>
+										</li>
+									))}
+								</ul>
+							</section>
+						)
+					}
+					{
+						(prev || next) && (
+							<nav class="pager" aria-label={`More in ${category.label}`}>
+								{prev && (
+									<a class="pager-prev" href={docUrl(prev)} rel="prev">
+										<span class="pager-label">Previous</span>
+										<span class="pager-title">{prev.data.title}</span>
+									</a>
+								)}
+								{next && (
+									<a class="pager-next" href={docUrl(next)} rel="next">
+										<span class="pager-label">Next</span>
+										<span class="pager-title">{next.data.title}</span>
+									</a>
+								)}
+							</nav>
+						)
+					}
+					<p class="page-actions">
+						<a href={docMarkdownUrl(doc)} data-astro-prefetch="false">View as Markdown</a>
+						<button class="copy-page" type="button" data-copy-page={docMarkdownUrl(doc)}>Copy page for AI</button>
+						<span class="visually-hidden" role="status" data-copy-page-status></span>
+					</p>
+				</footer>
 			</div>
-			<Content />
-			<h2 id="faq">Frequently asked questions</h2>
-			{
-				d.faq.map((f) => (
-					<>
-						<h3>{f.q}</h3>
-						<p>{f.a}</p>
-					</>
-				))
-			}
-		</div>
-	</article>
+		</article>
+	</div>
+	<script>
+		import '../../scripts/article';
+	</script>
 </BaseLayout>

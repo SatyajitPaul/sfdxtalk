@@ -1,0 +1,58 @@
+---
+// Release hub: /releases/{releaseSlug}/ — articles verified against one
+// Salesforce release. Built only for releases that have published articles.
+import '../../styles/hubs.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { docUrl, getDocs } from '../../lib/docs';
+import { latestUpdate } from '../../lib/export';
+import { RELEASES_INDEX_URL, articleCount, byRelease, releaseUrl, type ReleaseGroup } from '../../lib/hubs';
+import { collectionGraph, type Crumb } from '../../lib/schema';
+import { releaseSlug } from '../../lib/taxonomy';
+
+export async function getStaticPaths() {
+	return byRelease(await getDocs()).map((group) => ({
+		params: { release: releaseSlug(group.release) },
+		props: { group },
+	}));
+}
+
+const { release, apiVersion, docs } = (Astro.props as { group: ReleaseGroup }).group;
+const path = releaseUrl(release);
+const title = `Salesforce ${release} (API ${apiVersion}) Guides | SFDX Talk`;
+const description = `Unofficial Salesforce developer guides verified against the ${release} release (API version ${apiVersion}): Apex, LWC, Salesforce CLI and more.`;
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Releases', path: RELEASES_INDEX_URL },
+	{ name: release, path },
+];
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	jsonLd={collectionGraph({ path, title, description, crumbs, modified: latestUpdate(docs) }, docs)}
+>
+	<div class="page-narrow">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>Salesforce {release}</h1>
+		<p class="hub-meta">
+			<span class="badge badge-release">{release}</span>
+			<span class="badge">API {apiVersion}</span>
+			<span>{articleCount(docs.length)}</span>
+		</p>
+		<p>
+			These articles were verified against the Salesforce {release} release, which is API version {apiVersion}.
+		</p>
+		<ul class="doc-list">
+			{
+				docs.map((d) => (
+					<li>
+						<a href={docUrl(d)}>{d.data.title}</a>
+						<p>{d.data.description}</p>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</BaseLayout>

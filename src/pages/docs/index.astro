@@ -1,0 +1,48 @@
+---
+// Docs index: /docs/ — every category that has at least one published article.
+import '../../styles/hubs.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { getDocs } from '../../lib/docs';
+import { byCategory, latestUpdate } from '../../lib/export';
+import { DOCS_INDEX_URL, RELEASES_INDEX_URL, TAGS_INDEX_URL, articleCount } from '../../lib/hubs';
+import { categoryUrl, pageGraph, type Crumb } from '../../lib/schema';
+import { CATEGORIES } from '../../lib/taxonomy';
+
+const docs = await getDocs();
+const groups = byCategory(docs);
+const path = DOCS_INDEX_URL;
+const title = 'Salesforce Developer Docs by Category | SFDX Talk';
+const description =
+	'Browse unofficial Salesforce developer guides by category: Apex, Lightning Web Components, Salesforce CLI and more. Each is verified against a named release.';
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Docs', path },
+];
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	jsonLd={pageGraph({ path, title, description, type: 'CollectionPage', crumbs, modified: latestUpdate(docs) })}
+>
+	<div class="page-narrow">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>Salesforce developer docs</h1>
+		<p>
+			Unofficial guides for Salesforce developers, grouped by category. You can also browse
+			<a href={RELEASES_INDEX_URL}>by Salesforce release</a> or <a href={TAGS_INDEX_URL}>by tag</a>.
+		</p>
+		<ul class="doc-list">
+			{
+				groups.map((g) => (
+					<li>
+						<a href={categoryUrl(g.category)}>{CATEGORIES[g.category].label}</a>{' '}
+						<span class="hub-count">({articleCount(g.docs.length)})</span>
+						<p>{CATEGORIES[g.category].description}</p>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</BaseLayout>

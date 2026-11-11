@@ -1,11 +1,12 @@
 ---
 /**
- * Shell for every page: <head> metadata, theme, icons, service worker,
- * header and footer. SEO structured data is added in phase 5.
+ * Shell for every page: <head> metadata (SEO, Open Graph, JSON-LD), theme,
+ * icons, service worker, header and footer. See docs/PLAN.md §7–8.
  */
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import { SITE, abs } from '../lib/site';
 
 interface Props {
 	title: string;
@@ -13,10 +14,30 @@ interface Props {
 	/** Path for the canonical URL; defaults to the current path. */
 	canonicalPath?: string;
 	noindex?: boolean;
+	/** JSON-LD object from src/lib/schema.ts. Left out on noindex pages. */
+	jsonLd?: object;
+	/** Set on article pages: switches Open Graph to `article` and adds article:* tags. */
+	article?: { published: Date; modified: Date; section: string; tags: string[] };
+	/** Root-relative path of the raw Markdown version of this page. */
+	markdownPath?: string;
+	/** Social share image (1200×630 PNG, root-relative path); defaults to the site image. */
+	ogImage?: { path: string; alt: string };
 }
 
-const { title, description, canonicalPath = Astro.url.pathname, noindex = false } = Astro.props;
-const canonical = new URL(canonicalPath, Astro.site);
+const {
+	title,
+	description,
+	canonicalPath = Astro.url.pathname,
+	noindex = false,
+	jsonLd,
+	article,
+	markdownPath,
+	ogImage: shareImage = SITE.ogImage,
+} = Astro.props;
+const canonical = abs(canonicalPath);
+const ogImage = abs(shareImage.path);
+// `<` is escaped so no string value can close the script element early.
+const jsonLdText = jsonLd && !noindex ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : undefined;
 const isProd = import.meta.env.PROD;
 ---
 
@@ -28,7 +49,53 @@ const isProd = import.meta.env.PROD;
 		<title>{title}</title>
 		<meta name="description" content={description} />
 		<link rel="canonical" href={canonical} />
-		{noindex && <meta name="robots" content="noindex" />}
+		{
+			noindex ? (
+				<meta name="robots" content="noindex" />
+			) : (
+				// Allow full-length snippets and large image previews in search and AI answers.
+				<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+			)
+		}
+		<meta name="author" content={SITE.editorial} />
+
+		{
+			!noindex && (
+				<>
+					<meta property="og:type" content={article ? 'article' : 'website'} />
+					<meta property="og:site_name" content={SITE.name} />
+					<meta property="og:locale" content={SITE.locale} />
+					<meta property="og:title" content={title} />
+					<meta property="og:description" content={description} />
+					<meta property="og:url" content={canonical} />
+					<meta property="og:image" content={ogImage} />
+					<meta property="og:image:type" content="image/png" />
+					<meta property="og:image:width" content={String(SITE.ogImage.width)} />
+					<meta property="og:image:height" content={String(SITE.ogImage.height)} />
+					<meta property="og:image:alt" content={shareImage.alt} />
+					{
+						article && (
+							<>
+								<meta property="article:published_time" content={article.published.toISOString()} />
+								<meta property="article:modified_time" content={article.modified.toISOString()} />
+								<meta property="article:section" content={article.section} />
+								<meta property="article:author" content={SITE.editorial} />
+								{article.tags.map((tag) => <meta property="article:tag" content={tag} />)}
+							</>
+						)
+					}
+					<meta name="twitter:card" content="summary_large_image" />
+					<meta name="twitter:title" content={title} />
+					<meta name="twitter:description" content={description} />
+					<meta name="twitter:image" content={ogImage} />
+					<meta name="twitter:image:alt" content={shareImage.alt} />
+
+					<link rel="alternate" type="application/atom+xml" title={`${SITE.name} — latest articles`} href="/feed.xml" />
+					{markdownPath && <link rel="alternate" type="text/markdown" title="Markdown version of this page" href={markdownPath} />}
+					{jsonLdText && <script is:inline type="application/ld+json" set:html={jsonLdText} />}
+				</>
+			)
+		}
 
 		<meta name="color-scheme" content="dark light" />
 		<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)" />

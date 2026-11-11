@@ -168,3 +168,7 @@ dist
 
 # astro
 .astro/
+
+# Lighthouse CI reports
+.lighthouseci/
+.DS_Store
