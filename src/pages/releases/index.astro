@@ -1,0 +1,47 @@
+---
+// Release index: /releases/ — every Salesforce release that has published articles.
+import '../../styles/hubs.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { getDocs } from '../../lib/docs';
+import { latestUpdate } from '../../lib/export';
+import { RELEASES_INDEX_URL, articleCount, byRelease, releaseUrl } from '../../lib/hubs';
+import { pageGraph, type Crumb } from '../../lib/schema';
+
+const docs = await getDocs();
+const groups = byRelease(docs);
+const path = RELEASES_INDEX_URL;
+const title = 'Salesforce Developer Guides by Release | SFDX Talk';
+const description =
+	'Browse unofficial Salesforce developer guides by the Salesforce release and API version each one was verified against.';
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Releases', path },
+];
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	jsonLd={pageGraph({ path, title, description, type: 'CollectionPage', crumbs, modified: latestUpdate(docs) })}
+>
+	<div class="page-narrow">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>Salesforce releases</h1>
+		<p>
+			Every SFDX Talk article names the Salesforce release it was verified against. Pick a release to see its
+			articles, newest release first.
+		</p>
+		<ul class="doc-list">
+			{
+				groups.map((g) => (
+					<li>
+						<a href={releaseUrl(g.release)}>{g.release}</a>{' '}
+						<span class="hub-count">({articleCount(g.docs.length)})</span>
+						<p>API version {g.apiVersion}</p>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</BaseLayout>

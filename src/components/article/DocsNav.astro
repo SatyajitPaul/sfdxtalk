@@ -1,0 +1,47 @@
+---
+// Left rail: the category tree. Only the current category lists its articles,
+// so the HTML stays small however many articles the site has (PLAN §4, Hick's law).
+// Collapsed <details> by default (works without JS); the inline script opens it
+// on wide screens before first paint, where article.css shows it as a sidebar.
+import { docUrl, type Doc } from '../../lib/docs';
+import { categoryUrl } from '../../lib/schema';
+import { CATEGORIES, type Category } from '../../lib/taxonomy';
+
+interface Props {
+	groups: { category: Category; docs: Doc[] }[];
+	current: Doc;
+}
+const { groups, current } = Astro.props;
+---
+
+<nav class="rail docs-nav" aria-label="Documentation" data-pagefind-ignore="all">
+	<details data-rail>
+		<summary>Browse documentation</summary>
+		<p class="rail-title" aria-hidden="true">Documentation</p>
+		<ul class="docs-tree">
+			{
+				groups.map((g) => (
+					<li>
+						<a class:list={['docs-tree-category', { 'is-current': g.category === current.data.category }]} href={categoryUrl(g.category)}>
+							{CATEGORIES[g.category].label}
+						</a>
+						{g.category === current.data.category && (
+							<ul>
+								{g.docs.map((doc) => (
+									<li>
+										<a href={docUrl(doc)} aria-current={doc.id === current.id ? 'page' : undefined}>
+											{doc.data.title}
+										</a>
+									</li>
+								))}
+							</ul>
+						)}
+					</li>
+				))
+			}
+		</ul>
+	</details>
+	<script is:inline>
+		document.currentScript.previousElementSibling.open = matchMedia('(min-width:1200px)').matches;
+	</script>
+</nav>

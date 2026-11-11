@@ -1,0 +1,201 @@
+/* ==========================================================================
+   Article template (docs/PLAN.md §5): category tree · content · "On this page".
+   Uses the tokens from global.css. Imported only by the article page.
+
+   Small screens: one column; both rails are collapsed <details> bars.
+   ≥1200px: three columns; an inline script has opened both <details> before
+   first paint (no layout shift) and the rules under `.js` turn them into
+   plain sidebars. Without JS they stay working disclosures at every width.
+   ========================================================================== */
+
+/* ---------- Rails (shared by the category tree and the TOC) --------------- */
+.rail { font-size: var(--step--1); line-height: 1.4; }
+.rail details {
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+}
+.rail summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 2.75rem; /* ≥44px touch target */
+	padding: 0 var(--space-4);
+	color: var(--text-strong);
+	font-weight: 600;
+	cursor: pointer;
+	list-style: none;
+}
+.rail summary::-webkit-details-marker { display: none; }
+/* Chevron drawn with borders: no image, inherits the text color. */
+.rail summary::after {
+	content: '';
+	width: 0.5em;
+	height: 0.5em;
+	border: solid currentColor;
+	border-width: 0 2px 2px 0;
+	rotate: 45deg;
+	translate: 0 -0.15em;
+	transition: rotate 0.12s;
+}
+.rail details[open] > summary::after { rotate: -135deg; translate: 0 0.15em; }
+.rail details[open] > summary { border-bottom: 1px solid var(--border); }
+.rail-title { display: none; }
+
+.rail ul, .rail ol { margin: 0; padding: 0; list-style: none; }
+.rail details > ul, .rail details > ol { padding: var(--space-2) var(--space-4) var(--space-3); }
+.rail a {
+	display: block;
+	padding: 0.3rem 0 0.3rem var(--space-3);
+	border-left: 2px solid transparent;
+	color: var(--text-muted);
+	text-decoration: none;
+	overflow-wrap: anywhere;
+}
+.rail a:hover { color: var(--text-strong); }
+/* Current article / section being read: stronger text plus a bar, not color alone. */
+.rail a[aria-current] {
+	border-left-color: var(--accent);
+	color: var(--text-strong);
+}
+/* Bold only where it never changes: toggling weight in the TOC would re-wrap lines. */
+.docs-tree a[aria-current] { font-weight: 600; }
+
+.docs-tree .docs-tree-category { padding-left: 0; border-left: 0; color: var(--text); font-weight: 600; }
+.docs-tree .docs-tree-category.is-current { color: var(--text-strong); }
+.docs-tree ul { margin: 0 0 var(--space-2); border-left: 1px solid var(--border); }
+.docs-tree ul a { margin-left: -1px; }
+.toc ol ol a { padding-left: var(--space-5); }
+
+/* ---------- Layout -------------------------------------------------------- */
+.docs-nav { margin-bottom: var(--space-5); }
+.toc { margin-top: var(--space-5); }
+.article-header, .article-body { max-width: var(--measure); }
+.article-header > * + * { margin-top: var(--space-4); }
+.article-body { margin-top: var(--space-6); }
+
+@media (min-width: 1200px) {
+	.article-layout {
+		display: grid;
+		grid-template-columns: 13rem minmax(0, 1fr);
+		column-gap: clamp(2rem, 3.5vw, 3.5rem);
+		align-items: start;
+	}
+	.article {
+		display: grid;
+		grid-template-columns: minmax(0, var(--measure)) 12rem;
+		grid-template-rows: auto 1fr;
+		column-gap: clamp(2rem, 3.5vw, 3.5rem);
+		justify-content: space-between;
+	}
+	.article-header { grid-area: 1 / 1; }
+	.article-body { grid-area: 2 / 1; }
+	.toc { grid-area: 1 / 2 / span 2; }
+
+	.docs-nav, .toc {
+		position: sticky;
+		top: var(--space-5);
+		align-self: start;
+		max-height: calc(100vh - 2 * var(--space-5));
+		max-height: calc(100dvh - 2 * var(--space-5));
+		margin: 0;
+		/* Room for focus rings inside the scroll container. */
+		padding: 4px;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+
+	/* With JS the rails are always open, so the toggle is replaced by a plain title. */
+	.js .rail details { border: 0; background: none; }
+	.js .rail summary { display: none; }
+	.js .rail details > ul, .js .rail details > ol { padding: 0; }
+	.js .rail-title {
+		display: block;
+		margin: 0 0 var(--space-2);
+		color: var(--text-muted);
+		font-size: 0.75rem;
+		font-weight: 650;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+}
+
+/* ---------- Header: meta line and tags ------------------------------------ */
+.article-meta > * { margin: 0; }
+.article-meta > * + * { margin-top: var(--space-3); }
+a.badge { text-decoration: none; }
+a.badge:hover { border-color: var(--release); color: var(--release); }
+
+.doc-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0; list-style: none; font-size: var(--step--1); }
+.doc-tags a {
+	display: inline-block;
+	padding: 0.1rem 0.55rem; /* ≥24px target (WCAG 2.5.8) */
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	color: var(--text-muted);
+	text-decoration: none;
+}
+.doc-tags a::before { content: '#'; opacity: 0.6; }
+.doc-tags a:hover { border-color: var(--border-strong); color: var(--text-strong); }
+
+/* ---------- After the body: related, prev/next, page actions -------------- */
+.article-footer {
+	margin-top: var(--space-7);
+	padding-top: var(--space-5);
+	border-top: 1px solid var(--border);
+}
+.article-footer > * + * { margin-top: var(--space-6); }
+.article-footer h2 { font-size: var(--step-1); }
+
+.related-list { margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+.related-list li + li { margin-top: var(--space-3); }
+.related-list a { font-weight: 600; }
+.related-list p { margin: var(--space-1) 0 0; color: var(--text-muted); font-size: var(--step--1); }
+
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.pager a {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+	padding: var(--space-3) var(--space-4);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	text-decoration: none;
+}
+.pager a:hover { border-color: var(--border-strong); }
+.pager a:hover .pager-title { text-decoration: underline; }
+.pager-next { grid-column: 2; text-align: right; }
+.pager-label { color: var(--text-muted); font-size: var(--step--1); }
+.pager-title { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+@media (max-width: 30rem) {
+	.pager { grid-template-columns: 1fr; }
+	.pager-next { grid-column: 1; }
+}
+
+.page-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2) var(--space-4);
+	min-height: 2rem; /* same height with or without the JS-only button */
+	color: var(--text-muted);
+	font-size: var(--step--1);
+}
+/* Needs JS (fetch + clipboard), so it only appears when JS runs. */
+.copy-page {
+	display: none;
+	padding: 0.2rem 0.7rem;
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius-sm);
+	background: var(--surface);
+	color: var(--text);
+	cursor: pointer;
+}
+.js .copy-page { display: inline-block; }
+.copy-page:hover { color: var(--text-strong); border-color: var(--text-muted); }
+.copy-page[data-copied] { color: var(--accent); border-color: var(--accent); }
+
+@media print {
+	.rail, .pager, .page-actions { display: none !important; }
+	.article-layout, .article { display: block; }
+}

@@ -1,0 +1,51 @@
+# Checks every pull request and every push to master: the build (which also
+# validates content), the size budget, and Lighthouse CI. Deploys are manual
+# (`pnpm deploy`), so this workflow needs no secrets.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      # package.json has no "packageManager" field, so the version is set here.
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - run: pnpm check:budget
+
+      # ubuntu-latest ships Chrome, which Lighthouse CI finds on its own.
+      - run: pnpm check:lighthouse
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          if-no-files-found: ignore
+          include-hidden-files: true

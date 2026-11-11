@@ -1,0 +1,51 @@
+---
+// Tag hub: /tags/{tag}/ — lists every published article with one tag.
+// `noindex` until the tag has enough articles to be more than a thin page.
+import '../../styles/hubs.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { docUrl, getDocs } from '../../lib/docs';
+import { latestUpdate } from '../../lib/export';
+import { TAGS_INDEX_URL, articleCount, byTag, tagUrl, type TagGroup } from '../../lib/hubs';
+import { collectionGraph, type Crumb } from '../../lib/schema';
+
+export async function getStaticPaths() {
+	return byTag(await getDocs()).map((group) => ({
+		params: { tag: group.tag },
+		props: { group },
+	}));
+}
+
+const { tag, docs, indexable } = (Astro.props as { group: TagGroup }).group;
+const path = tagUrl(tag);
+const title = `Articles tagged "${tag}" | SFDX Talk`;
+const description = `Unofficial Salesforce developer guides tagged "${tag}" on SFDX Talk. Each article names the Salesforce release and API version it was verified against.`;
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Tags', path: TAGS_INDEX_URL },
+	{ name: tag, path },
+];
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	noindex={!indexable}
+	jsonLd={collectionGraph({ path, title, description, crumbs, modified: latestUpdate(docs) }, docs)}
+>
+	<div class="page-narrow">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>Articles tagged “{tag}”</h1>
+		<p class="hub-meta">{articleCount(docs.length)}</p>
+		<ul class="doc-list">
+			{
+				docs.map((d) => (
+					<li>
+						<a href={docUrl(d)}>{d.data.title}</a>
+						<p>{d.data.description}</p>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</BaseLayout>

@@ -1,0 +1,39 @@
+---
+// "On this page" outline. Same open/closed mechanics as DocsNav: collapsed
+// <details> without JS and on small screens, right rail on wide screens.
+// src/scripts/article.ts marks the section being read with aria-current.
+import type { TocItem } from '../../lib/article';
+
+interface Props {
+	items: TocItem[];
+}
+const { items } = Astro.props;
+---
+
+<nav class="rail toc" aria-label="On this page" data-pagefind-ignore="all" data-toc>
+	<details data-rail>
+		<summary>On this page</summary>
+		<p class="rail-title" aria-hidden="true">On this page</p>
+		<ol>
+			{
+				items.map((item) => (
+					<li>
+						<a href={`#${item.id}`}>{item.text}</a>
+						{item.children.length > 0 && (
+							<ol>
+								{item.children.map((child) => (
+									<li>
+										<a href={`#${child.id}`}>{child.text}</a>
+									</li>
+								))}
+							</ol>
+						)}
+					</li>
+				))
+			}
+		</ol>
+	</details>
+	<script is:inline>
+		document.currentScript.previousElementSibling.open = matchMedia('(min-width:1200px)').matches;
+	</script>
+</nav>

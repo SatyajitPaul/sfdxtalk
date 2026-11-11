@@ -1,0 +1,50 @@
+---
+// Category hub: /docs/{category}/ — lists every article in one category.
+// Built only for categories that have at least one published article.
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import { docUrl, getDocs, type Doc } from '../../../lib/docs';
+import { byCategory, latestUpdate } from '../../../lib/export';
+import { categoryUrl, collectionGraph, type Crumb } from '../../../lib/schema';
+import { CATEGORIES, type Category } from '../../../lib/taxonomy';
+
+export async function getStaticPaths() {
+	return byCategory(await getDocs()).map((group) => ({
+		params: { category: group.category },
+		props: { docs: group.docs },
+	}));
+}
+
+const { category } = Astro.params as { category: Category };
+const { docs } = Astro.props as { docs: Doc[] };
+const info = CATEGORIES[category];
+const path = categoryUrl(category);
+const title = `${info.label} Guides for Developers — SFDX Talk`;
+const description = `${info.description} Unofficial guides for Salesforce developers, each verified against a named release.`;
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: info.label, path },
+];
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	jsonLd={collectionGraph({ path, title, description, crumbs, modified: latestUpdate(docs) }, docs)}
+>
+	<div class="page-narrow">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>{info.label}</h1>
+		<p>{info.description}</p>
+		<ul class="doc-list">
+			{
+				docs.map((d) => (
+					<li>
+						<a href={docUrl(d)}>{d.data.title}</a>
+						<p>{d.data.description}</p>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</BaseLayout>

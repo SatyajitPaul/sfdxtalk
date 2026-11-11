@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { satteri, satteriHeadingIdsPlugin } from '@astrojs/markdown-satteri';
+import pagefindIndex from './src/integrations/pagefind.ts';
 import serviceWorker from './src/integrations/service-worker.ts';
 import { sfdxMarkdown } from './src/markdown/callouts.ts';
 import { codeBlocks } from './src/markdown/code-blocks.ts';
@@ -46,5 +47,5 @@ export default defineConfig({
 		},
 	},
 
-	integrations: [serviceWorker()],
+	integrations: [serviceWorker(), pagefindIndex()],
 });

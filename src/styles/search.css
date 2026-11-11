@@ -1,0 +1,79 @@
+/* Search: filters, header trigger and header dialog (docs/PLAN.md §6).
+   The base .search-* rules live in global.css ("Home page and search"). */
+
+/* The "/" hint is centered on the input, not on the whole form (which also holds the filters). */
+.search .search-key { top: 0.8rem; translate: none; }
+
+.search-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.search-filters[hidden] { display: none; }
+.search-filters select {
+	flex: 1 1 8rem;
+	min-width: 0;
+	padding: 0.3rem 0.5rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+	font-size: var(--step--1);
+}
+
+/* Header trigger: icon only on small screens, a field-like pill when there is room.
+   Fixed size either way, and hidden without JS, so it never shifts the header. */
+.search-open { display: none; }
+.js .search-open { display: inline-grid; }
+.search-open span, .search-open kbd { display: none; }
+@media (min-width: 40rem) {
+	.js .search-open {
+		display: inline-flex;
+		justify-content: flex-start;
+		gap: var(--space-2);
+		width: 11rem;
+		padding: 0 var(--space-3);
+		border-color: var(--border);
+		background: var(--surface);
+		font: inherit;
+		font-size: var(--step--1);
+	}
+	.search-open span { display: inline; }
+	.search-open kbd {
+		display: inline;
+		margin-left: auto;
+		padding: 0 0.4rem;
+		border: 1px solid var(--border-strong);
+		border-radius: var(--radius-sm);
+	}
+}
+
+.search-dialog {
+	width: min(42rem, calc(100vw - 2rem));
+	max-width: none;
+	max-height: min(40rem, calc(100dvh - 2rem));
+	margin: 1rem auto auto;
+	padding: 0;
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius);
+	background: var(--bg);
+	color: var(--text);
+}
+/* Column layout keeps the close row visible while the results scroll. */
+.search-dialog[open] { display: flex; flex-direction: column; }
+.search-dialog::backdrop { background: rgb(0 0 0 / 0.55); }
+.search-dialog .search { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: var(--space-4) var(--space-4) 0; }
+.search-dialog-close {
+	display: flex;
+	justify-content: flex-end;
+	padding: var(--space-2) var(--space-4);
+	border-top: 1px solid var(--border);
+}
+.search-dialog-close button {
+	padding: 0.3rem 0.7rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: var(--text-muted);
+	font: inherit;
+	font-size: var(--step--1);
+	cursor: pointer;
+}
+.search-dialog-close button:hover { color: var(--text-strong); background: var(--surface); }

@@ -1,0 +1,55 @@
+---
+// Search box backed by the Pagefind index (docs/PLAN.md §6). Used as the large
+// box on the home page and inside the header dialog on every other page; the
+// behavior for both lives in src/scripts/search.ts.
+// The index and its code are downloaded on the first keystroke, not on page load.
+import '../styles/search.css';
+
+interface Props {
+	autofocus?: boolean;
+}
+const { autofocus = false } = Astro.props;
+
+// Keys match the `data-pagefind-filter` names on article pages. A select stays
+// hidden unless the index has values for it.
+const filters = [
+	['category', 'Category', 'All categories'],
+	['release', 'Release', 'All releases'],
+	['level', 'Level', 'All levels'],
+	['tag', 'Tag', 'All tags'],
+];
+---
+
+<search class="search" data-search>
+	<form role="search" data-search-form>
+		<label class="visually-hidden" for="search-input">Search SFDX Talk</label>
+		<input
+			id="search-input"
+			class="search-input"
+			type="search"
+			name="q"
+			placeholder="Search Apex, LWC, SOQL, CLI…"
+			autocomplete="off"
+			autocapitalize="off"
+			spellcheck="false"
+			enterkeyhint="search"
+			autofocus={autofocus}
+			data-search-input
+		/>
+		<kbd class="search-key" aria-hidden="true">/</kbd>
+		<div class="search-filters" role="group" aria-label="Filter results" data-search-filters hidden>
+			{filters.map(([key, label, any]) => (
+				<select aria-label={label} data-filter={key} hidden>
+					<option value="">{any}</option>
+				</select>
+			))}
+		</div>
+	</form>
+	<p class="search-status" role="status" data-search-status></p>
+	<ol class="search-results" data-search-results></ol>
+	<noscript><p class="search-status">Search needs JavaScript. Browse the categories below instead.</p></noscript>
+</search>
+
+<script>
+	import '../scripts/search';
+</script>
