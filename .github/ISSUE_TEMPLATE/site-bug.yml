@@ -1,0 +1,17 @@
+name: Site bug
+description: Something wrong with the website itself (layout, search, comments, performance).
+title: "[Site] "
+labels: [site, triage]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Include the page URL and what you expected instead.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Safari 19 on iPhone

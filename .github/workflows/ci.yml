@@ -1,6 +1,11 @@
 # Checks every pull request and every push to master: the build (which also
-# validates content), the size budget, and Lighthouse CI. Deploys are manual
-# (`pnpm deploy`), so this workflow needs no secrets.
+# validates content), the size budget, and Lighthouse CI. Required to pass
+# before merge (branch ruleset on master).
+#
+# Security (public repo): this workflow uses `pull_request`, never
+# `pull_request_target`, so pull requests from forks run with a read-only token
+# and no secrets. It needs no secrets at all. Deploys happen in Cloudflare
+# Workers Builds when master changes, not here.
 name: CI
 
 on:
@@ -21,6 +26,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history: article contributor credits come from git log.
+          fetch-depth: 0
+          # The build never pushes; don't leave the token in .git/config.
+          persist-credentials: false
 
       # package.json has no "packageManager" field, so the version is set here.
       - uses: pnpm/action-setup@v6

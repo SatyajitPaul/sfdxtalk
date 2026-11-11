@@ -4,6 +4,7 @@
  *   - "On this page": mark the section being read.
  *   - Rails: open as sidebars on wide screens, collapsed bars on small ones.
  *   - "Copy page for AI": copy the article's Markdown version.
+ *   - Giscus comments: loaded on demand when the reader nears them.
  */
 
 const wide = matchMedia('(min-width:1200px)');
@@ -66,3 +67,46 @@ document.addEventListener('click', async (event) => {
 		if (status) status.textContent = '';
 	}, 2000);
 });
+
+// Giscus comments (src/components/article/Comments.astro): load the third-party
+// script only when the reader gets near the comments, and keep its theme in
+// step with the site's light/dark toggle.
+const giscus = document.querySelector<HTMLElement>('[data-giscus]');
+if (giscus && 'IntersectionObserver' in window) {
+	const theme = () => {
+		const t = document.documentElement.dataset.theme;
+		const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+		return dark ? 'transparent_dark' : 'light';
+	};
+	const io = new IntersectionObserver(
+		(entries) => {
+			if (!entries.some((e) => e.isIntersecting)) return;
+			io.disconnect();
+			const s = document.createElement('script');
+			s.src = 'https://giscus.app/client.js';
+			s.async = true;
+			s.crossOrigin = 'anonymous';
+			const attrs: Record<string, string> = {
+				...giscus.dataset,
+				mapping: 'specific',
+				strict: '1',
+				reactionsEnabled: '1',
+				emitMetadata: '0',
+				inputPosition: 'top',
+				lang: 'en',
+				theme: theme(),
+			};
+			delete attrs.giscus;
+			for (const [k, v] of Object.entries(attrs)) s.dataset[k] = v!;
+			giscus.append(s);
+			new MutationObserver(() => {
+				giscus.querySelector<HTMLIFrameElement>('iframe.giscus-frame')?.contentWindow?.postMessage(
+					{ giscus: { setConfig: { theme: theme() } } },
+					'https://giscus.app',
+				);
+			}).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+		},
+		{ rootMargin: '0px 0px 800px 0px' },
+	);
+	io.observe(giscus);
+}

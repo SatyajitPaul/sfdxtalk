@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question or start a discussion
+    url: https://github.com/SatyajitPaul/sfdxtalk/discussions
+    about: Questions about Salesforce development or an article go to Discussions.
+  - name: Report a security vulnerability
+    url: https://github.com/SatyajitPaul/sfdxtalk/security/advisories/new
+    about: Please report security issues privately, not as public issues.

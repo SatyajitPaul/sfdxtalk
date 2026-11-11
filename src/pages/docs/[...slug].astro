@@ -9,15 +9,17 @@ import { render } from 'astro:content';
 import '../../styles/article.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import Comments from '../../components/article/Comments.astro';
 import DocsNav from '../../components/article/DocsNav.astro';
 import Toc from '../../components/article/Toc.astro';
 import { FAQ_SECTION, buildToc, neighbours } from '../../lib/article';
+import { contributorsFor } from '../../lib/contributors';
 import { docUrl, getDocs, type Doc } from '../../lib/docs';
 import { byCategory, docMarkdownUrl, isoDate } from '../../lib/export';
 import { releaseUrl, tagUrl } from '../../lib/hubs';
 import { docOgImageAlt, docOgImagePath } from '../../lib/og-image';
 import { articleGraph, categoryUrl, docCrumbs, readingMinutes, wordCount } from '../../lib/schema';
-import { SITE } from '../../lib/site';
+import { SITE, abs, repoLinks } from '../../lib/site';
 import { CATEGORIES, type Category } from '../../lib/taxonomy';
 
 type Groups = { category: Category; docs: Doc[] }[];
@@ -41,13 +43,15 @@ const pageTitle = `${d.title} — SFDX Talk`;
 const minutes = readingMinutes(wordCount(doc.body ?? ''));
 const human = (date: Date) => date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
 const level = d.level[0].toUpperCase() + d.level.slice(1);
+const contributors = contributorsFor(doc.id);
+const links = repoLinks(doc.id);
 const { prev, next } = neighbours(groups.find((g) => g.category === d.category)?.docs ?? [], doc);
 ---
 
 <BaseLayout
 	title={pageTitle}
 	description={d.description}
-	jsonLd={articleGraph(doc, pageTitle)}
+	jsonLd={articleGraph(doc, pageTitle, contributors)}
 	article={{ published: d.published, modified: d.lastUpdated, section: category.label, tags: d.tags }}
 	markdownPath={docMarkdownUrl(doc)}
 	ogImage={{ path: docOgImagePath(doc), alt: docOgImageAlt(doc) }}
@@ -135,12 +139,39 @@ const { prev, next } = neighbours(groups.find((g) => g.category === d.category)?
 							</nav>
 						)
 					}
+					<div class="community">
+						<p class="community-lead">
+							SFDX Talk is maintained by the community. Spotted something outdated or wrong?
+						</p>
+						<p class="community-links">
+							<a href={links.edit} rel="noopener">Edit this page on GitHub</a>
+							<a href={links.issue(abs(docUrl(doc)), d.title)} rel="noopener">Report a problem</a>
+							<a href={links.history} rel="noopener">Page history</a>
+						</p>
+						{
+							contributors.length > 0 && (
+								<p class="contributors">
+									Contributors:{' '}
+									{contributors.map((c, i) => (
+										<>
+											{i > 0 && ', '}
+											{c.url ? <a href={c.url} rel="noopener">{c.name}</a> : c.name}
+										</>
+									))}
+								</p>
+							)
+						}
+						<p class="license">
+							Published by {SITE.editorial} under <a href={SITE.contentLicense.url} rel="license noopener">{SITE.contentLicense.name}</a>.
+						</p>
+					</div>
 					<p class="page-actions">
 						<a href={docMarkdownUrl(doc)} data-astro-prefetch="false">View as Markdown</a>
 						<button class="copy-page" type="button" data-copy-page={docMarkdownUrl(doc)}>Copy page for AI</button>
 						<span class="visually-hidden" role="status" data-copy-page-status></span>
 					</p>
 				</footer>
+				<Comments term={doc.id} />
 			</div>
 		</article>
 	</div>

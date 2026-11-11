@@ -1,0 +1,45 @@
+name: Report a problem with an article
+description: Something outdated, wrong, unclear or broken in an article.
+title: "[Article] "
+labels: [content, triage]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Article URL
+      description: The sfdxtalk.com page (filled in for you when you use "Report a problem" on the article).
+      placeholder: https://sfdxtalk.com/docs/apex/trigger-handler-pattern/
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem?
+      options:
+        - Outdated for the current Salesforce release
+        - Incorrect information
+        - Code example doesn't work
+        - Broken link or image
+        - Unclear or missing explanation
+        - Typo or formatting
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What's wrong, and what should it say?
+      description: Quote the passage if you can. Link the official Salesforce docs or release notes that show the correct behaviour.
+    validations:
+      required: true
+  - type: input
+    id: release
+    attributes:
+      label: Salesforce release you tested on (optional)
+      placeholder: "Winter '27"
+  - type: checkboxes
+    id: fix
+    attributes:
+      label: Want to fix it yourself?
+      options:
+        - label: I'll open a pull request (use "Edit this page on GitHub" on the article)

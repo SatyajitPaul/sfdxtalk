@@ -51,9 +51,11 @@ There is no unit test suite or linter. `pnpm build` is the content check: frontm
 
 **Caching/headers.** `public/_headers` defines cache policy (immutable `/_astro/*`, `no-cache` for `/sw.js`, revalidated HTML) plus security headers. CSS is inlined into every page (`inlineStylesheets: 'always'`) to keep LCP free of render-blocking requests.
 
+**Community.** The repo is public and community-maintained: `CONTRIBUTING.md`, `.github/` issue forms, PR template, `CODEOWNERS` and Dependabot. Articles are CC BY 4.0 (`LICENSE-CONTENT`), code MIT (`LICENSE`). Each article ends with Edit / Report a problem / Page history links (`repoLinks()` in `src/lib/site.ts`) and Giscus comments (`src/components/article/Comments.astro`, lazy-loaded by `src/scripts/article.ts`), which stay off until `SITE.giscus.repoId`/`categoryId` are set. Merging to `master` deploys (Cloudflare Workers Builds), so CI must pass before merge; CI never uses `pull_request_target` or secrets.
+
 ## Content rules worth remembering
 
-- No author field or personal bylines — everything is credited to "SFDX Talk Editorial".
+- No author field or personal bylines — articles are published by "SFDX Talk Editorial". Community contributors are credited automatically from git history (`src/lib/contributors.ts`, shown under the article and as JSON-LD `contributor`); commits by `SITE.editorialAuthors` are not listed. Never write email addresses to the page.
 - The page template renders title, TL;DR, FAQ (also emitted as `FAQPage` JSON-LD), and related links from frontmatter; don't repeat them or add an H1 in the body.
 - Never imply Salesforce endorsement, use Salesforce logos, or copy official docs beyond short attributed quotes. Avoid Salesforce brand blue (`#0176D3`) in the UI.
 - CLI examples use the modern `sf` CLI; legacy `sfdx` only in a note.

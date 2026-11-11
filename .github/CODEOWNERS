@@ -1,0 +1,14 @@
+# Every change is reviewed by a maintainer before merge.
+# Merging to master deploys to sfdxtalk.com (Cloudflare Workers Builds).
+*                    @SatyajitPaul
+
+# Files that run during the build or in CI: always need explicit maintainer review.
+/.github/            @SatyajitPaul
+/package.json        @SatyajitPaul
+/pnpm-lock.yaml      @SatyajitPaul
+/astro.config.mjs    @SatyajitPaul
+/src/integrations/   @SatyajitPaul
+/src/markdown/       @SatyajitPaul
+/scripts/            @SatyajitPaul
+/wrangler.jsonc      @SatyajitPaul
+/public/_headers     @SatyajitPaul
