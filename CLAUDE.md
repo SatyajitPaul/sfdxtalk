@@ -38,6 +38,7 @@ There is no unit test suite or linter. `pnpm build` is the content check: frontm
 **Markdown rendering.** Uses the Sätteri processor (`@astrojs/markdown-satteri`), not remark/rehype. Custom plugins in `src/markdown/`:
 - `callouts.ts` — HAST plugin: `> [!NOTE|TIP|WARNING|RELEASE]` callouts, scrollable table wrappers, heading anchor links. It must run after `satteriHeadingIdsPlugin()` (order set in `astro.config.mjs`).
 - `code-blocks.ts` — Shiki transformer wrapping fences in a `<figure>` with title/language caption and copy button (button enabled by `src/scripts/site.ts`).
+- `mermaid.ts` — HAST plugin rendering ` ```mermaid ` fences to inline SVG at build time with `beautiful-mermaid` (no browser, no client JS); `mermaid` is in `syntaxHighlight.excludeLangs` so Shiki leaves those fences alone. After changing a Markdown plugin, delete `.astro/data-store.json` and `node_modules/.astro/data-store.json`, or Astro serves cached renders.
 - `shiki-themes.ts` — light/dark themes; Shiki emits CSS variables only (`defaultColor: false`) and `src/styles/global.css` selects the theme via `data-theme`. `soql`/`sosl` alias to `sql`.
 
 **URLs.** `trailingSlash: 'always'` + `build.format: 'directory'` in Astro matches `html_handling: "auto-trailing-slash"` in `wrangler.jsonc`. Keep these in agreement; internal links use root-relative paths with a trailing slash. Never rename a published slug.
