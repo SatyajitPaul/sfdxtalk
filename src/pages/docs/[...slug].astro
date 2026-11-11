@@ -1,0 +1,39 @@
+---
+// TEMPORARY article route so phase 2 can verify content loads and renders.
+// Replaced by the real article template in phase 4.
+import { render } from 'astro:content';
+import { getDocs, type Doc } from '../../lib/docs';
+
+export async function getStaticPaths() {
+	const docs = await getDocs();
+	return docs.map((doc) => ({ params: { slug: doc.id }, props: { doc } }));
+}
+
+const { doc } = Astro.props as { doc: Doc };
+const { Content } = await render(doc);
+const d = doc.data;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{d.title} — SFDX Talk</title>
+		<meta name="description" content={d.description} />
+		<meta name="robots" content="noindex" />
+	</head>
+	<body>
+		<main>
+			<h1>{d.title}</h1>
+			<p>
+				{d.release} · API {d.apiVersion} · Last updated
+				<time datetime={d.lastUpdated.toISOString().slice(0, 10)}>{d.lastUpdated.toISOString().slice(0, 10)}</time>
+			</p>
+			<p><strong>TL;DR:</strong> {d.tldr}</p>
+			<Content />
+			<h2>FAQ</h2>
+			{d.faq.map((f) => (<><h3>{f.q}</h3><p>{f.a}</p></>))}
+		</main>
+	</body>
+</html>

@@ -67,6 +67,18 @@ draft: false
 | `officialRefs` | ✅ | ≥1 link to official Salesforce documentation for the topic. |
 | `draft` | ⬜ | `true` hides the article from build output. Default `false`. |
 
+### Automatic checks
+
+The build also rejects:
+
+- Unknown frontmatter fields (typos like `lastupdated` fail instead of being ignored).
+- `apiVersion` that doesn't match `release` (§4).
+- `lastUpdated` before `published`, or either date in the future.
+- A file whose folder differs from its `category`, or a non-hyphenated slug.
+- A title or description already used by another article.
+- `related` entries that point to a missing or draft article, or to the article itself.
+- FAQ text containing backticks, HTML, `**bold**`, or Markdown links. Underscores are fine (`Account__c`).
+
 There is **no `author` field**. Every article is credited to "SFDX Talk Editorial" automatically. Do not add personal names or bylines in the body.
 
 ---
