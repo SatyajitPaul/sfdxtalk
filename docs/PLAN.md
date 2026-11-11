@@ -94,9 +94,12 @@ Light-theme callout colors are starting values; finalize after APCA check.
 
 ### Home (`/`)
 
-- Logo + large search box (autofocus) + one-line tagline.
-- Compact row of category links (for browsers, not searchers).
-- **Random article card** at bottom: build-time article rendered into HTML (crawlable, no-JS safe); tiny inline script swaps in a random one from an embedded list. Fixed card height → zero CLS.
+- Logo + one-line tagline + short factual intro (article count, what every article contains): a quotable summary for AI engines.
+- Large search box (autofocus).
+- **Browse by topic** grid: every category with its description and article count (two compact columns on phones).
+- **Latest articles**: the 8 most recently updated articles with category, release and date.
+- **More ways to browse**: every release hub, the most-used indexable tags, and links to `llms.txt`, the feed and the sitemap.
+- All static HTML with no page script (search is the only JS). JSON-LD is a `CollectionPage` whose `ItemList` is the latest articles.
 
 ### Article (`/docs/{category}/{slug}/`)
 

@@ -1,91 +1,112 @@
 ---
-// Home page (docs/PLAN.md §5): logo, search, tagline, category links and a
-// random article card.
+// Home page (docs/PLAN.md §5): search first, then every category with its
+// article count, the newest articles, and browse-by-release/tag entry points.
+// Everything is static HTML — no client script beyond search — so it is fully
+// crawlable, quotable by AI engines, and tiny.
 import { Image } from 'astro:assets';
 import logo from '../assets/logo.png';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Search from '../components/Search.astro';
 import { getDocs, docUrl } from '../lib/docs';
-import { byCategory, latestUpdate } from '../lib/export';
-import { categoryUrl, pageGraph } from '../lib/schema';
+import { byCategory, latestUpdate, isoDate } from '../lib/export';
+import { DOCS_INDEX_URL, RELEASES_INDEX_URL, TAGS_INDEX_URL, articleCount, byRelease, byTag, releaseUrl, tagUrl, MIN_INDEXABLE_TAG_DOCS } from '../lib/hubs';
+import { categoryUrl, collectionGraph } from '../lib/schema';
 import { SITE } from '../lib/site';
 import { CATEGORIES } from '../lib/taxonomy';
 
 const docs = await getDocs(); // newest update first
 const groups = byCategory(docs);
-
-// The card is rendered at build time with the newest article, so it is
-// crawlable and works without JS. An inline script then swaps in a random
-// article from this list; capped so the home page stays small.
-const CARD_POOL = 24;
-const cards = docs.slice(0, CARD_POOL).map((d) => ({
-	u: docUrl(d),
-	t: d.data.title,
-	d: d.data.description,
-	c: CATEGORIES[d.data.category].label,
-	r: d.data.release,
-}));
-const first = cards[0];
+const latest = docs.slice(0, 8);
+const releases = byRelease(docs);
+const topTags = byTag(docs)
+	.filter((t) => t.docs.length >= MIN_INDEXABLE_TAG_DOCS)
+	.sort((a, b) => b.docs.length - a.docs.length || a.tag.localeCompare(b.tag))
+	.slice(0, 12);
 ---
 
 <BaseLayout
 	title={SITE.title}
 	description={SITE.description}
-	jsonLd={pageGraph({ path: '/', title: SITE.title, description: SITE.description, modified: latestUpdate(docs) })}
+	jsonLd={collectionGraph({ path: '/', title: SITE.title, description: SITE.description, modified: latestUpdate(docs) }, latest)}
 >
 	<div class="home">
 		<header class="home-hero">
-			<Image src={logo} alt="" width={112} height={112} densities={[1, 2]} format="webp" loading="eager" fetchpriority="high" />
+			<Image src={logo} alt="" width={72} height={72} densities={[1, 2]} format="webp" loading="eager" fetchpriority="high" />
 			<h1>SFDX Talk</h1>
-			<p class="home-tagline">Unofficial Salesforce documentation for developers.</p>
+			<p class="home-tagline">Unofficial Salesforce developer documentation</p>
+			<p class="home-intro">
+				{docs.length} practical guides on Apex, Lightning Web Components, SOQL, the Salesforce CLI and APIs. Each
+				article opens with a quick answer, names the Salesforce release it was checked against, and links to the official docs.
+			</p>
 		</header>
 
 		<Search autofocus />
 
-		<nav class="home-categories" aria-label="Categories">
-			<ul>
+		<section aria-labelledby="cats-heading">
+			<h2 id="cats-heading" class="home-h">Browse by topic</h2>
+			<ul class="home-grid">
 				{
 					groups.map((g) => (
 						<li>
-							<a href={categoryUrl(g.category)}>{CATEGORIES[g.category].label}</a>
+							<a href={categoryUrl(g.category)}>
+								<span class="home-grid-title">{CATEGORIES[g.category].label}</span>
+								<span class="home-grid-text">{CATEGORIES[g.category].description}</span>
+								<span class="home-grid-count">{articleCount(g.docs.length)}</span>
+							</a>
 						</li>
 					))
 				}
 			</ul>
-		</nav>
+		</section>
 
-		{
-			first && (
-				<section class="home-random" aria-labelledby="random-heading">
-					<h2 id="random-heading">Random article</h2>
-					<a class="doc-card" href={first.u} data-random-card>
-						<span class="doc-card-meta">
-							<span data-card="c">{first.c}</span>
-							<span class="badge badge-release" data-card="r">{first.r}</span>
-						</span>
-						<span class="doc-card-title" data-card="t">{first.t}</span>
-						<span class="doc-card-text" data-card="d">{first.d}</span>
-					</a>
-					{
-						cards.length > 1 && (
+		<section aria-labelledby="latest-heading">
+			<h2 id="latest-heading" class="home-h">Latest articles</h2>
+			<ul class="home-latest">
+				{
+					latest.map((d) => (
+						<li>
+							<a href={docUrl(d)}>{d.data.title}</a>
+							<span class="home-latest-meta">
+								{CATEGORIES[d.data.category].label} · <span class="badge badge-release">{d.data.release}</span> ·{' '}
+								<time datetime={isoDate(d.data.lastUpdated)}>{isoDate(d.data.lastUpdated)}</time>
+							</span>
+							<span class="home-latest-text">{d.data.description}</span>
+						</li>
+					))
+				}
+			</ul>
+			<p class="home-more"><a href={DOCS_INDEX_URL}>All topics →</a></p>
+		</section>
+
+		<section aria-labelledby="more-heading" class="home-browse">
+			<h2 id="more-heading" class="home-h">More ways to browse</h2>
+			<p>
+				<strong><a href={RELEASES_INDEX_URL}>By release:</a></strong>
+				{
+					releases.map((r, i) => (
+						<>
+							{i > 0 && ' · '}
+							<a href={releaseUrl(r.release)}>{r.release}</a>
+						</>
+					))
+				}
+			</p>
+			{
+				topTags.length > 0 && (
+					<p>
+						<strong><a href={TAGS_INDEX_URL}>Popular tags:</a></strong>
+						{topTags.map((t, i) => (
 							<>
-								<script is:inline type="application/json" id="random-cards" set:html={JSON.stringify(cards).replace(/</g, '\\u003c')} />
-								<script is:inline>
-									(() => {
-										try {
-											const all = JSON.parse(document.getElementById('random-cards').textContent);
-											const pick = all[Math.floor(Math.random() * all.length)];
-											const card = document.querySelector('[data-random-card]');
-											card.href = pick.u;
-											card.querySelectorAll('[data-card]').forEach((el) => (el.textContent = pick[el.dataset.card]));
-										} catch {}
-									})();
-								</script>
+								{i > 0 && ' · '}
+								<a href={tagUrl(t.tag)}>{t.tag}</a>
 							</>
-						)
-					}
-				</section>
-			)
-		}
+						))}
+					</p>
+				)
+			}
+			<p class="home-machine">
+				For tools and AI assistants: <a href="/llms.txt">llms.txt</a> · <a href="/feed.xml">RSS feed</a> · <a href="/sitemap.xml">sitemap</a>
+			</p>
+		</section>
 	</div>
 </BaseLayout>
