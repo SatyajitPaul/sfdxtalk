@@ -21,6 +21,13 @@ export const SITE = {
 	/** Public profile URLs for Organization `sameAs`. Add real profiles only. */
 	sameAs: [] as string[],
 
+	/**
+	 * Google Tag Manager container. Google Analytics 4 and Microsoft Clarity are
+	 * configured as tags inside this container, not in site code. Loaded only in
+	 * production builds (BaseLayout.astro). Set to '' to turn analytics off.
+	 */
+	gtmId: 'GTM-MV74N2CH',
+
 	/** Public GitHub repository: "Edit this page", history and issue links. */
 	repo: {
 		url: 'https://github.com/SatyajitPaul/sfdxtalk',
