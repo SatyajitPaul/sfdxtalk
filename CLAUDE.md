@@ -43,7 +43,7 @@ There is no unit test suite or linter. `pnpm build` is the content check: frontm
 
 **URLs.** `trailingSlash: 'always'` + `build.format: 'directory'` in Astro matches `html_handling: "auto-trailing-slash"` in `wrangler.jsonc`. Keep these in agreement; internal links use root-relative paths with a trailing slash. Never rename a published slug.
 
-**Pages.** Articles use the three-column template in `src/pages/docs/[...slug].astro` with `src/components/article/*`. Hubs: `/docs/`, `/docs/{category}/`, `/tags/{tag}/` (noindex below 3 articles), `/releases/{release}/`; URL helpers in `src/lib/hubs.ts`. Per-article share images are rendered at build time by `src/lib/og-image.ts` to `/og/{category}/{slug}.png`.
+**Pages.** Articles use the three-column template in `src/pages/docs/[...slug].astro` with `src/components/article/*`. Hubs: `/docs/`, `/docs/{category}/`, `/tags/{tag}/` (only built, and linked, for tags with 3+ articles), `/releases/{release}/`; URL helpers in `src/lib/hubs.ts`. Per-article share images are rendered at build time by `src/lib/og-image.ts` to `/og/{category}/{slug}.png`.
 
 **Search.** `src/integrations/pagefind.ts` writes the Pagefind index to `dist/pagefind/` on `astro:build:done`, and `pnpm dev` serves that folder, so dev search needs one prior `pnpm build` and is only as fresh as it. Only elements marked `data-pagefind-body` (articles) are indexed. `src/components/Search.astro` (home box and header dialog) and `src/scripts/search.ts` load the index on the first keystroke.
 

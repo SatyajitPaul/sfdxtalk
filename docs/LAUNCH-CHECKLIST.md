@@ -13,6 +13,7 @@ Cloudflare blocks AI crawlers by default on new domains, which defeats `public/r
 
 - [ ] Turn **off** AI-crawler blocking ("Block AI bots" / AI Crawl Control → allow all crawlers).
 - [ ] Turn **off** the managed `robots.txt` ("Instruct AI bot traffic with robots.txt").
+- [ ] Turn **on** SSL/TLS → Edge Certificates → **Always Use HTTPS**. Without it `http://sfdxtalk.com/…` answers 200 instead of redirecting, and Search Console reports the http copies as "Alternate page with proper canonical tag". Check with `curl -I http://sfdxtalk.com/` (expect 301 to https).
 - [ ] After deploy, open `https://sfdxtalk.com/robots.txt` and confirm it is the file from this repo, with no lines added by Cloudflare.
 
 ## Deploy

@@ -11,7 +11,7 @@ export const DOCS_INDEX_URL = '/docs/';
 export const TAGS_INDEX_URL = '/tags/';
 export const RELEASES_INDEX_URL = '/releases/';
 
-/** Tag pages with fewer articles than this are `noindex` (thin pages hurt SEO). */
+/** Tag pages are only built (and linked) once a tag has this many articles; thin pages hurt SEO. */
 export const MIN_INDEXABLE_TAG_DOCS = 3;
 
 /** Tags are already lowercase-hyphenated slugs (enforced by the content schema). */

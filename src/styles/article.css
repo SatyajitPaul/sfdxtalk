@@ -127,7 +127,8 @@ a.badge { text-decoration: none; }
 a.badge:hover { border-color: var(--release); color: var(--release); }
 
 .doc-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0; list-style: none; font-size: var(--step--1); }
-.doc-tags a {
+.doc-tags a,
+.doc-tags span {
 	display: inline-block;
 	padding: 0.1rem 0.55rem; /* ≥24px target (WCAG 2.5.8) */
 	border: 1px solid var(--border);
@@ -135,7 +136,8 @@ a.badge:hover { border-color: var(--release); color: var(--release); }
 	color: var(--text-muted);
 	text-decoration: none;
 }
-.doc-tags a::before { content: '#'; opacity: 0.6; }
+.doc-tags a::before,
+.doc-tags span::before { content: '#'; opacity: 0.6; }
 .doc-tags a:hover { border-color: var(--border-strong); color: var(--text-strong); }
 
 /* ---------- After the body: related, prev/next, page actions -------------- */
