@@ -175,3 +175,6 @@ dist
 
 # Claude
 .claude/
+
+# Local SEO audit output (claude-seo plugin)
+*-audit/

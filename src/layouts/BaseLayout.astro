@@ -67,7 +67,8 @@ const gtmId = isProd ? SITE.gtmId : '';
 		}
 		<title>{title}</title>
 		<meta name="description" content={description} />
-		<link rel="canonical" href={canonical} />
+		{/* A noindex page names no canonical: mixing the two sends Google conflicting signals. */}
+		{!noindex && <link rel="canonical" href={canonical} />}
 		{
 			noindex ? (
 				<meta name="robots" content="noindex" />

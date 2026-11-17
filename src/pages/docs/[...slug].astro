@@ -16,7 +16,7 @@ import { FAQ_SECTION, buildToc, neighbours } from '../../lib/article';
 import { contributorsFor } from '../../lib/contributors';
 import { docUrl, getDocs, type Doc } from '../../lib/docs';
 import { byCategory, docMarkdownUrl, isoDate } from '../../lib/export';
-import { releaseUrl, tagUrl } from '../../lib/hubs';
+import { byTag, releaseUrl, tagUrl } from '../../lib/hubs';
 import { docOgImageAlt, docOgImagePath } from '../../lib/og-image';
 import { articleGraph, categoryUrl, docCrumbs, readingMinutes, wordCount } from '../../lib/schema';
 import { SITE, abs, repoLinks } from '../../lib/site';
@@ -28,14 +28,21 @@ export async function getStaticPaths() {
 	const docs = await getDocs();
 	const byId = new Map(docs.map((doc) => [doc.id, doc]));
 	const groups = byCategory(docs);
+	// Only these tags have a page (see src/pages/tags/[tag].astro); the rest are plain text.
+	const linkedTags = new Set(byTag(docs).filter((g) => g.indexable).map((g) => g.tag));
 	return docs.map((doc) => ({
 		params: { slug: doc.id },
 		// getDocs() has already checked that every related id is published.
-		props: { doc, groups, related: doc.data.related.map((id) => byId.get(id)!) },
+		props: { doc, groups, linkedTags, related: doc.data.related.map((id) => byId.get(id)!) },
 	}));
 }
 
-const { doc, groups, related } = Astro.props as { doc: Doc; groups: Groups; related: Doc[] };
+const { doc, groups, linkedTags, related } = Astro.props as {
+	doc: Doc;
+	groups: Groups;
+	linkedTags: Set<string>;
+	related: Doc[];
+};
 const { Content, headings } = await render(doc);
 const d = doc.data;
 const category = CATEGORIES[d.category];
@@ -77,7 +84,11 @@ const { prev, next } = neighbours(groups.find((g) => g.category === d.category)?
 						{
 							d.tags.map((tag) => (
 								<li>
-									<a href={tagUrl(tag)} rel="tag" data-pagefind-filter="tag">{tag}</a>
+									{linkedTags.has(tag) ? (
+										<a href={tagUrl(tag)} rel="tag" data-pagefind-filter="tag">{tag}</a>
+									) : (
+										<span data-pagefind-filter="tag">{tag}</span>
+									)}
 								</li>
 							))
 						}

@@ -19,7 +19,7 @@ export const SITE = {
 	/** Default social share image, 1.91:1. */
 	ogImage: { path: '/og-default.png', width: 1200, height: 630, alt: 'SFDX Talk — unofficial Salesforce developer documentation' },
 	/** Public profile URLs for Organization `sameAs`. Add real profiles only. */
-	sameAs: [] as string[],
+	sameAs: ['https://github.com/SatyajitPaul/sfdxtalk'] as string[],
 
 	/**
 	 * Google Tag Manager container. Google Analytics 4 and Microsoft Clarity are

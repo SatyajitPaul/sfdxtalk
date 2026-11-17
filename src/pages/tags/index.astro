@@ -34,7 +34,7 @@ const crumbs: Crumb[] = [
 			{
 				groups.map((g) => (
 					<li>
-						<a href={tagUrl(g.tag)}>{g.tag}</a> <span class="hub-count">({g.docs.length})</span>
+						{g.indexable ? <a href={tagUrl(g.tag)}>{g.tag}</a> : <span>{g.tag}</span>} <span class="hub-count">({g.docs.length})</span>
 					</li>
 				))
 			}

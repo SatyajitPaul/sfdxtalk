@@ -1,6 +1,7 @@
 ---
 // Tag hub: /tags/{tag}/ — lists every published article with one tag.
-// `noindex` until the tag has enough articles to be more than a thin page.
+// Only built once the tag has enough articles to be more than a thin page
+// (MIN_INDEXABLE_TAG_DOCS); thinner tags are shown as plain text, not linked.
 import '../../styles/hubs.css';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
@@ -10,13 +11,15 @@ import { TAGS_INDEX_URL, articleCount, byTag, tagUrl, type TagGroup } from '../.
 import { collectionGraph, type Crumb } from '../../lib/schema';
 
 export async function getStaticPaths() {
-	return byTag(await getDocs()).map((group) => ({
+	return byTag(await getDocs())
+		.filter((group) => group.indexable)
+		.map((group) => ({
 		params: { tag: group.tag },
 		props: { group },
 	}));
 }
 
-const { tag, docs, indexable } = (Astro.props as { group: TagGroup }).group;
+const { tag, docs } = (Astro.props as { group: TagGroup }).group;
 const path = tagUrl(tag);
 const title = `Articles tagged "${tag}" | SFDX Talk`;
 const description = `Unofficial Salesforce developer guides tagged "${tag}" on SFDX Talk. Each article names the Salesforce release and API version it was verified against.`;
@@ -30,7 +33,6 @@ const crumbs: Crumb[] = [
 <BaseLayout
 	title={title}
 	description={description}
-	noindex={!indexable}
 	jsonLd={collectionGraph({ path, title, description, crumbs, modified: latestUpdate(docs) }, docs)}
 >
 	<div class="page-narrow">
