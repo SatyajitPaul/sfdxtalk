@@ -20,8 +20,8 @@
 		"sharp": "0.35.5"
 	},
 	"devDependencies": {
-		"@lhci/cli": "^0.16.0",
+		"@lhci/cli": "^0.16.1",
 		"pagefind": "^1.6.0",
-		"wrangler": "^4.159.0"
+		"wrangler": "^4.162.0"
 	}
 }
