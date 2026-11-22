@@ -22,11 +22,17 @@ export const SITE = {
 	sameAs: ['https://github.com/SatyajitPaul/sfdxtalk'] as string[],
 
 	/**
-	 * Google Tag Manager container. Google Analytics 4 and Microsoft Clarity are
-	 * configured as tags inside this container, not in site code. Loaded only in
-	 * production builds (BaseLayout.astro). Set to '' to turn analytics off.
+	 * Google Tag Manager container. Google Analytics 4 is configured as a tag
+	 * inside this container, not in site code. Loaded only in production builds
+	 * (BaseLayout.astro). Set to '' to turn it off.
 	 */
 	gtmId: 'GTM-MV74N2CH',
+
+	/**
+	 * Microsoft Clarity project, loaded with its official snippet in
+	 * BaseLayout.astro, production builds only. Set to '' to turn it off.
+	 */
+	clarityId: 'zd0hd3s7pc',
 
 	/** Public GitHub repository: "Edit this page", history and issue links. */
 	repo: {

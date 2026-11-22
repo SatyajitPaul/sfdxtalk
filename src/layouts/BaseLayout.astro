@@ -39,8 +39,9 @@ const ogImage = abs(shareImage.path);
 // `<` is escaped so no string value can close the script element early.
 const jsonLdText = jsonLd && !noindex ? JSON.stringify(jsonLd).replace(/</g, '\\u003c') : undefined;
 const isProd = import.meta.env.PROD;
-// Analytics (GA4 + Clarity, both set up as tags in GTM) runs only in production builds.
+// Analytics (GA4 via GTM, and Microsoft Clarity) runs only in production builds.
 const gtmId = isProd ? SITE.gtmId : '';
+const clarityId = isProd ? SITE.clarityId : '';
 ---
 
 <!doctype html>
@@ -62,6 +63,25 @@ const gtmId = isProd ? SITE.gtmId : '';
 						j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
 						f.parentNode.insertBefore(j, f);
 					})(window, document, 'script', 'dataLayer', gtmId);
+				</script>
+			)
+		}
+		{
+			// Microsoft Clarity: official snippet, loads its tag script async.
+			clarityId && (
+				<script is:inline define:vars={{ clarityId }}>
+					(function (c, l, a, r, i, t, y) {
+						c[a] =
+							c[a] ||
+							function () {
+								(c[a].q = c[a].q || []).push(arguments);
+							};
+						t = l.createElement(r);
+						t.async = 1;
+						t.src = 'https://www.clarity.ms/tag/' + i;
+						y = l.getElementsByTagName(r)[0];
+						y.parentNode.insertBefore(t, y);
+					})(window, document, 'clarity', 'script', clarityId);
 				</script>
 			)
 		}
