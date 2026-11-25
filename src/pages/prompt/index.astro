@@ -1,0 +1,60 @@
+---
+// /prompt/ — library of tested prompts for Salesforce work.
+import LibraryHub from '../../components/library/LibraryHub.astro';
+import { PROMPTS_INDEX_URL, PROMPT_CATEGORIES, getPrompts, promptUrl, type PromptCategory } from '../../lib/prompts';
+
+const prompts = getPrompts();
+const groups = (Object.keys(PROMPT_CATEGORIES) as PromptCategory[])
+	.map((c) => ({
+		id: c,
+		label: PROMPT_CATEGORIES[c],
+		items: prompts
+			.filter((p) => p.category === c)
+			.map((p) => ({ title: p.title, tagline: p.tagline, href: promptUrl(p), path: promptUrl(p), meta: `Tested ${p.tested.date} · ${p.tested.model}` })),
+	}))
+	.filter((g) => g.items.length > 0);
+
+const faq = [
+	{
+		q: 'What does "tested" mean for these prompts?',
+		a: 'Each prompt was run with the example inputs on the page, and the output shown is what came back. We then checked that output against the checklist on the page. Every prompt page states the model, the date and what we did not verify, for example that generated code was not deployed to an org.',
+	},
+	{
+		q: 'Will I get exactly the same output?',
+		a: 'No. Language models vary between runs and between models. The known-good output shows what a correct answer looks like, and the checklist tells you how to judge your own output.',
+	},
+	{
+		q: 'Do the prompts work with any AI assistant?',
+		a: 'Yes. They are plain text and do not depend on a vendor. Results differ by model, and prompts that need data from your org work best with an assistant connected to a Salesforce MCP server or the Salesforce CLI.',
+	},
+	{
+		q: 'Can I trust generated Apex or Flow without reviewing it?',
+		a: 'No. Review every result, compile or validate it in a sandbox, and run tests before you deploy. Each prompt page lists the caveats that matter most for that task.',
+	},
+	{
+		q: 'How do I fill in the placeholders?',
+		a: 'Placeholders look like {{object_name}}. Each prompt page has a small form: type your values and copy the finished prompt. Nothing you type is sent anywhere.',
+	},
+	{
+		q: 'How are prompts different from skills?',
+		a: 'A prompt is text you paste for one task. A skill is a packaged set of instructions an assistant loads on its own when a request matches. The prompt pages link to matching skills.',
+	},
+];
+---
+
+<LibraryHub
+	path={PROMPTS_INDEX_URL}
+	crumbName="Prompts"
+	title="Salesforce Prompts for AI: Tested Prompt Library | SFDX Talk"
+	h1="Tested Salesforce prompts for AI assistants"
+	description="Copy-ready prompts for Salesforce work: trigger handlers, test classes, governor-limit reviews, Flow explanations. Each has a known-good output."
+	lead="Prompts for everyday Salesforce developer tasks, each with a worked example, the output we got, a checklist for judging your own result and the caveats that matter. Every page explains what the prompt does and shows how it was tested."
+	promises={[
+		'<strong>Worked.</strong> Each prompt shows its example inputs and a known-good output.',
+		'<strong>Checkable.</strong> A checklist tells you what to verify before you trust a result.',
+		'<strong>Honest.</strong> Every page says the model, the date and what was not verified.',
+	]}
+	groups={groups}
+	faq={faq}
+	count={prompts.length}
+/>

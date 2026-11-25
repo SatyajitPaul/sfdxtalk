@@ -5,7 +5,8 @@
 //
 // Budgets:
 //   - every HTML page (CSS is inlined into it) under 40 KB gzipped
-//   - all JS in _astro/ together under JS_LIMIT gzipped
+//   - JS loaded by any one page (its scripts plus their static imports) under that
+//     page's limit gzipped: JS_LIMIT for most pages, TOOL_JS_LIMIT for /tools/ pages
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -16,6 +17,9 @@ const HTML_LIMIT = 40 * 1024;
 // the check per page if the two ever need separate limits. Pagefind's own
 // runtime lives in /pagefind/ and is not counted.
 const JS_LIMIT = 6 * 1024;
+// Interactive tool pages load their own small script on top of the site script.
+// Libraries are not allowed; hand-written code stays well below this.
+const TOOL_JS_LIMIT = 24 * 1024;
 
 const dir = process.argv[2] ?? 'dist';
 if (!existsSync(dir)) {
@@ -57,8 +61,32 @@ function table(rows) {
 }
 
 const overPages = pages.filter((page) => page.size > HTML_LIMIT);
+
+// JS per page: follow <script src> and static imports between _astro files.
+const scriptSize = new Map(scripts.map((script) => [script.file, script.size]));
+function importsOf(file) {
+	const code = readFileSync(join(dir, file), 'utf8');
+	return [...code.matchAll(/(?:import|from)\s*["']\.\/([^"']+\.m?js)["']/g)].map((m) => `_astro/${m[1]}`);
+}
+function pageScripts(html) {
+	const seen = new Set();
+	const visit = (file) => {
+		if (seen.has(file) || !scriptSize.has(file)) return;
+		seen.add(file);
+		importsOf(file).forEach(visit);
+	};
+	for (const m of html.matchAll(/<script[^>]*\ssrc="\/(_astro\/[^"]+\.m?js)"/g)) visit(m[1]);
+	return [...seen];
+}
+const jsPages = pages.map((page) => {
+	const loaded = pageScripts(readFileSync(join(dir, page.file), 'utf8'));
+	const size = loaded.reduce((sum, file) => sum + scriptSize.get(file), 0);
+	const limit = page.file.startsWith('tools/') ? TOOL_JS_LIMIT : JS_LIMIT;
+	return { file: page.file, size, limit, loaded: loaded.length };
+});
+const jsOverPages = jsPages.filter((p) => p.size > p.limit);
 const jsTotal = scripts.reduce((sum, script) => sum + script.size, 0);
-const jsOver = jsTotal > JS_LIMIT;
+const jsOver = jsOverPages.length > 0;
 
 console.log(`HTML pages, gzipped (limit ${kb(HTML_LIMIT)} each) — ${pages.length} pages`);
 // Show every failure, plus the largest pages so growth is visible before it fails.
@@ -66,16 +94,14 @@ const shown = [...overPages, ...pages.filter((page) => page.size <= HTML_LIMIT).
 table(shown.map((page) => [page.file, kb(page.size), page.size > HTML_LIMIT ? 'OVER' : 'ok']));
 if (shown.length < pages.length) console.log(`  … ${pages.length - shown.length} smaller pages not shown`);
 
-console.log(`\nJS in _astro/, gzipped (limit ${kb(JS_LIMIT)} in total) — ${scripts.length} files`);
-table([
-	...scripts.map((script) => [script.file, kb(script.size), '']),
-	['total', kb(jsTotal), jsOver ? 'OVER' : 'ok'],
-]);
+console.log(`\nJS per page, gzipped (limit ${kb(JS_LIMIT)}, tools ${kb(TOOL_JS_LIMIT)}) — ${scripts.length} files in _astro/, ${kb(jsTotal)} in total`);
+const jsShown = [...jsOverPages, ...jsPages.filter((p) => p.size <= p.limit).sort((a, b) => b.size - a.size).slice(0, 6)];
+table(jsShown.map((p) => [p.file, kb(p.size), p.size > p.limit ? 'OVER' : 'ok']));
 
 if (overPages.length || jsOver) {
 	console.error('\ncheck-budget: FAILED');
 	if (overPages.length) console.error(`  ${overPages.length} page(s) over ${kb(HTML_LIMIT)} gzipped`);
-	if (jsOver) console.error(`  _astro/ JS is ${kb(jsTotal)} gzipped, over ${kb(JS_LIMIT)}`);
+	if (jsOver) console.error(`  ${jsOverPages.length} page(s) load more JS than their limit`);
 	process.exit(1);
 }
 console.log('\ncheck-budget: passed');

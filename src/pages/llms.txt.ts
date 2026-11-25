@@ -4,6 +4,10 @@ import { getDocs } from '../lib/docs';
 import { byCategory, docMarkdownUrl } from '../lib/export';
 import { DOCS_INDEX_URL, RELEASES_INDEX_URL, articleCount, byRelease, releaseUrl } from '../lib/hubs';
 import { SITE, abs } from '../lib/site';
+import { PROMPTS_INDEX_URL, getPrompts } from '../lib/prompts';
+import { SKILLS_INDEX_URL, getSkills } from '../lib/skills';
+import { toolMarkdown } from '../lib/tool-exports';
+import { TOOLS_INDEX_URL, liveTools, toolUrl } from '../lib/tools';
 import { CATEGORIES } from '../lib/taxonomy';
 
 export const GET: APIRoute = async () => {
@@ -34,6 +38,36 @@ export const GET: APIRoute = async () => {
 		),
 		'',
 	);
+	const tools = liveTools();
+	if (tools.length) {
+		lines.push(
+			'## Tools',
+			'',
+			`- [All tools](${abs(TOOLS_INDEX_URL)}): free Salesforce developer tools that run in the browser`,
+			...tools.map((t) => `- [${t.name}](${abs(toolMarkdown(t.slug) ? `/tools/${t.slug}.md` : toolUrl(t))}): ${t.tagline}`),
+			'',
+		);
+	}
+	const skills = getSkills();
+	if (skills.length) {
+		lines.push(
+			'## Skills',
+			'',
+			`- [All skills](${abs(SKILLS_INDEX_URL)}): downloadable Agent Skills for working with Salesforce through MCP or the Salesforce CLI`,
+			...skills.map((s) => `- [${s.title}](${abs(`/skills/${s.slug}.md`)}): ${s.tagline}`),
+			'',
+		);
+	}
+	const prompts = getPrompts();
+	if (prompts.length) {
+		lines.push(
+			'## Prompts',
+			'',
+			`- [All prompts](${abs(PROMPTS_INDEX_URL)}): tested prompts for Salesforce work, each with a known-good output`,
+			...prompts.map((p) => `- [${p.title}](${abs(`/prompt/${p.slug}.md`)}): ${p.tagline}`),
+			'',
+		);
+	}
 	lines.push(
 		'## Optional',
 		'',

@@ -1,0 +1,41 @@
+---
+/** How to use a downloaded skill. Shared by the skills hub and every skill page. */
+interface Props {
+	/** Skill folder name, when shown on a skill page. */
+	slug?: string;
+}
+const { slug = 'skill-name' } = Astro.props;
+---
+
+<section aria-labelledby="install" class="prose">
+	<h2 id="install">How to install a skill</h2>
+	<p>
+		A skill is a folder with a <code>SKILL.md</code> file: YAML frontmatter with a <code>name</code> and a
+		<code>description</code>, then plain Markdown instructions. An assistant reads the description to decide when the skill
+		applies and loads the rest only then. The format is the open
+		<a href="https://agentskills.io/specification" rel="noopener">Agent Skills specification</a>.
+	</p>
+	<ul>
+		<li>
+			<strong>Claude Code:</strong> unzip the download so the folder lands in <code>~/.claude/skills/{slug}/</code> for all
+			projects, or <code>.claude/skills/{slug}/</code> inside one project. Start a new session.
+		</li>
+		<li>
+			<strong>Claude app (web and desktop):</strong> upload the zip in the Skills section of your settings. Availability depends
+			on your plan, and the menu names change, so check Anthropic's current help pages.
+		</li>
+		<li>
+			<strong>Other assistants that support Agent Skills:</strong> copy the folder into the skills directory that assistant
+			documents.
+		</li>
+		<li>
+			<strong>Any other LLM:</strong> open <code>SKILL.md</code> and paste its contents into the system prompt, custom
+			instructions or project instructions. You lose automatic loading, but the guidance works the same.
+		</li>
+	</ul>
+	<p>
+		Skills that work with your org need a connection: a Salesforce MCP server added to your assistant, or the
+		<a href="/docs/sf-cli/salesforce-cli-reference-guide/">Salesforce CLI</a> logged in to an org. Start with a sandbox or
+		scratch org, and give the connection the least access that does the job.
+	</p>
+</section>

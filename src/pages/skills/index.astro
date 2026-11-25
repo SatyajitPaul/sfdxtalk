@@ -1,0 +1,63 @@
+---
+// /skills/ — library of downloadable Agent Skills for working with Salesforce.
+import LibraryHub from '../../components/library/LibraryHub.astro';
+import SkillInstall from '../../components/library/SkillInstall.astro';
+import { SKILLS_INDEX_URL, SKILL_CATEGORIES, getSkills, skillUrl, type SkillCategory } from '../../lib/skills';
+
+const skills = getSkills();
+const groups = (Object.keys(SKILL_CATEGORIES) as SkillCategory[])
+	.map((c) => ({
+		id: c,
+		label: SKILL_CATEGORIES[c],
+		items: skills
+			.filter((s) => s.category === c)
+			.map((s) => ({ title: s.title, tagline: s.tagline, href: skillUrl(s), path: skillUrl(s), meta: `v${s.version} · ${s.needs.connection.split(/[.;]/)[0]}` })),
+	}))
+	.filter((g) => g.items.length > 0);
+
+const faq = [
+	{
+		q: 'What is a Salesforce skill for an AI assistant?',
+		a: 'A skill is a folder with a SKILL.md file that teaches an AI assistant how to do one job well, such as writing and running a SOQL query or reviewing Apex for governor-limit risks. The assistant loads it when your request matches its description, so you do not have to paste long instructions every time.',
+	},
+	{
+		q: 'How are skills different from prompts and MCP servers?',
+		a: 'A prompt is text you paste for one task. A skill packages instructions the assistant can load on demand and reuse. An MCP server is the connection that lets the assistant call Salesforce, for example to run a query. The skills here describe how to use that connection safely; they do not replace it.',
+	},
+	{
+		q: 'Do these skills need a Salesforce connection?',
+		a: 'Skills that work with your org need either a Salesforce MCP server connected to your assistant or the Salesforce CLI logged in to an org. Each skill page states exactly what it needs. Use a sandbox or scratch org first.',
+	},
+	{
+		q: 'Can I use them with assistants other than Claude?',
+		a: 'Yes. Skills follow the open Agent Skills format, so assistants that support it can load the same folder. For any other LLM, paste the contents of SKILL.md into the system prompt or custom instructions.',
+	},
+	{
+		q: 'Are the skills safe to run against production?',
+		a: 'Treat them as guidance, not a guarantee. Each skill lists what it refuses to do and which access it expects. Run them in a sandbox first, give the connection read-only access unless a task needs more, and review every change before it is deployed.',
+	},
+	{
+		q: 'Are the skills free to use and change?',
+		a: 'Yes. Skills are released under the MIT license, so you can use, edit and share them. They are unofficial and not affiliated with Salesforce.',
+	},
+];
+---
+
+<LibraryHub
+	path={SKILLS_INDEX_URL}
+	crumbName="Skills"
+	title="Salesforce Skills for AI Assistants (Free Downloads) | SFDX Talk"
+	h1="Salesforce skills for AI assistants"
+	description="Free, downloadable Agent Skills for Salesforce: SOQL, Apex review, Flow and more. Use them with Claude, MCP servers or the Salesforce CLI."
+	lead="Downloadable skills that teach an AI assistant to do real Salesforce work through an MCP connection or the Salesforce CLI. Each skill has its own page that explains what it does, what it needs and how it stays safe, plus the full SKILL.md so you can read it before you install it."
+	promises={[
+		'<strong>Readable.</strong> Every skill page shows the whole SKILL.md and explains it in plain language.',
+		'<strong>Guarded.</strong> Each one lists what it refuses to do and the access it expects.',
+		'<strong>Portable.</strong> Open Agent Skills format, MIT license, a zip or the raw file.',
+	]}
+	groups={groups}
+	faq={faq}
+	count={skills.length}
+>
+	<SkillInstall />
+</LibraryHub>

@@ -3,3 +3,20 @@
 .hub-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); color: var(--text-muted); font-size: var(--step--1); }
 .tag-list { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); padding: 0; list-style: none; }
 .tag-list li { margin: 0; }
+
+/* Tools hub (/tools/) */
+.tools-lead { font-size: var(--step-1); color: var(--text-muted); }
+.tools-promises { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); font-size: var(--step--1); }
+.tools-promises li { margin: 0; padding-left: var(--space-3); border-left: 2px solid var(--border-strong); }
+.tools-status { padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: 0.5rem; background: var(--surface); font-size: var(--step--1); }
+.tools-group-text { margin: var(--space-1) 0 var(--space-3); color: var(--text-muted); font-size: var(--step--1); }
+.tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.tool-card { margin: 0; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--surface); }
+.tool-card > a, .tool-card-planned { display: flex; flex-direction: column; gap: var(--space-1); height: 100%; padding: var(--space-3) var(--space-4); text-decoration: none; }
+.tool-card:hover { border-color: var(--border-strong); }
+.tool-card-title { font-weight: 650; }
+.tool-card > a .tool-card-title { color: var(--link); }
+.tool-card-text { color: var(--text-muted); font-size: var(--step--1); }
+.tool-card-planned .tool-card-title { color: var(--text); }
+.tool-card-soon { margin-top: auto; padding-top: var(--space-1); color: var(--text-muted); font-size: var(--step--1); font-style: italic; }
+.tools-footnote { color: var(--text-muted); font-size: var(--step--1); }

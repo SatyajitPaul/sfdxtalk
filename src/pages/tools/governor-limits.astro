@@ -1,0 +1,189 @@
+---
+// /tools/governor-limits/ — searchable Apex governor limits reference.
+// All data is server-rendered (src/data/governor-limits.ts) so the page is fully
+// readable by crawlers and AI engines without JS; the filter box only enhances it.
+import ToolLayout from '../../components/tools/ToolLayout.astro';
+import { ERROR_HINTS, LIMITS_META, LIMIT_SECTIONS } from '../../data/governor-limits';
+
+const faq = [
+	{
+		q: 'What are Salesforce governor limits?',
+		a: 'Governor limits are runtime caps that the Apex engine enforces so that no single piece of code can monopolize the shared, multitenant platform. When code goes over a limit, Salesforce throws a runtime exception that cannot be handled.',
+	},
+	{
+		q: 'How many SOQL queries can I run in one Apex transaction?',
+		a: 'You can issue 100 SOQL queries in a synchronous transaction and 200 in an asynchronous one. Each parent-child relationship subquery counts as an extra query. Queries against custom metadata types are not limited.',
+	},
+	{
+		q: 'What is the difference between synchronous and asynchronous limits?',
+		a: 'Asynchronous Apex (Batch Apex, future methods and Queueable Apex) gets higher limits for SOQL queries (200 vs 100), heap size (25 MB vs 10 MB) and CPU time (60,000 ms vs 10,000 ms). Scheduled Apex is asynchronous, but the synchronous limits apply to it.',
+	},
+	{
+		q: 'What is the Apex heap size limit?',
+		a: 'The current Apex Developer Guide lists 10 MB for synchronous Apex and 25 MB for asynchronous Apex. Older articles and books often quote 6 MB and 12 MB, which are the values that the guide listed in earlier releases. The 6 MB and 12 MB figures still apply to the maximum callout request or response size.',
+	},
+	{
+		q: 'Can I catch a governor limit exception in Apex?',
+		a: 'No. A System.LimitException cannot be caught, so a try-catch block will not save the transaction. The fix is to stay under the limits, which you can check at runtime with the Apex Limits class.',
+	},
+	{
+		q: 'How do I check how close my code is to a limit?',
+		a: 'Use the Limits class. Methods such as Limits.getQueries() and Limits.getDmlStatements() return how much of a limit has been used, and the matching Limits.getLimit methods return the maximum, for example Limits.getLimitQueries().',
+	},
+	{
+		q: 'Do managed packages share my limits?',
+		a: 'Certified managed packages, which have passed the AppExchange security review, get their own per-namespace limits for most per-transaction limits. The cumulative limit across namespaces is 11 times the per-namespace limit. Heap size, CPU time and execution time are shared by the whole transaction. Non-certified packages use your org limits.',
+	},
+];
+
+const tldr =
+	'In a synchronous Apex transaction you get 100 SOQL queries, 150 DML statements, 50,000 query rows, 10,000 DML rows, 100 callouts, 10 MB of heap and 10 seconds of CPU time. Asynchronous Apex raises SOQL queries to 200, heap to 25 MB and CPU time to 60 seconds. Exceeding a limit throws an exception you cannot catch.';
+
+const idCount = LIMIT_SECTIONS.reduce((n, s) => n + s.rows.length, 0);
+---
+
+<ToolLayout
+	slug="governor-limits"
+	title="Salesforce Governor Limits Reference (Apex Limits Table) | SFDX Talk"
+	h1="Salesforce governor limits reference"
+	description="Searchable Salesforce Apex governor limits: SOQL, DML, heap, CPU time and callouts, synchronous vs asynchronous, checked against the official docs for Winter '27."
+	tldr={tldr}
+	faq={faq}
+	modified={new Date(`${LIMITS_META.verified}T00:00:00Z`)}
+	source={{
+		name: LIMITS_META.sourceName,
+		url: LIMITS_META.source,
+		release: LIMITS_META.release,
+		apiVersion: LIMITS_META.apiVersion,
+		verified: LIMITS_META.verified,
+	}}
+>
+	<div class="tool-filter" data-tf data-noun="limits">
+		<label for="limits-q" class="sr-only">Filter limits</label>
+		<input id="limits-q" type="search" placeholder="Filter limits: soql, heap, callout, batch…" autocomplete="off" spellcheck="false" />
+		<p class="tool-filter-status" role="status" aria-live="polite" data-tf-status>{idCount} limits</p>
+	</div>
+
+	<section aria-labelledby="which-limit" class="ref-section" data-tf-section>
+		<h2 id="which-limit">Which limit did I hit?</h2>
+		<p>
+			Match the error message from a debug log or a failed transaction to its limit. Numbers in the message are the
+			limit plus one, because the exception is thrown on the first call over the limit.
+		</p>
+		<div class="table-wrap">
+			<table class="ref-table">
+				<thead>
+					<tr>
+						<th scope="col">Error message</th>
+						<th scope="col">Limit that was exceeded</th>
+						<th scope="col">Common fix</th>
+					</tr>
+				</thead>
+				<tbody>
+					{
+						ERROR_HINTS.map((e) => (
+							<tr data-tf-row>
+								<th scope="row">
+									<code>{e.message}</code>
+								</th>
+								<td>
+									<a href={`#${e.rowId}`}>{e.limit}</a>
+								</td>
+								<td>{e.fix}</td>
+							</tr>
+						))
+					}
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	{
+		LIMIT_SECTIONS.map((s) => (
+			<section aria-labelledby={s.id} class="ref-section" data-tf-section>
+				<h2 id={s.id}>{s.title}</h2>
+				<p>{s.intro}</p>
+				<div class="table-wrap">
+					<table class="ref-table">
+						<thead>
+							<tr>
+								<th scope="col">Limit</th>
+								{s.columns === 'sync-async' ? (
+									<>
+										<th scope="col">Synchronous</th>
+										<th scope="col">Asynchronous</th>
+									</>
+								) : (
+									<th scope="col">Value</th>
+								)}
+							</tr>
+						</thead>
+						<tbody>
+							{s.rows.map((r) => (
+								<tr id={r.id} data-tf-row>
+									<th scope="row" class="ref-name">
+										{r.name}
+										<a class="anchor" href={`#${r.id}`} aria-label={`Link to: ${r.name}`}>
+											#
+										</a>
+										{r.note && <span class="ref-note">{r.note}</span>}
+										{r.method && (
+											<span class="ref-method">
+												Read it in Apex: <code>{r.method}</code>
+											</span>
+										)}
+									</th>
+									{s.columns === 'sync-async' ? (
+										r.async ? (
+											<>
+												<td class="ref-value">{r.sync}</td>
+												<td class="ref-value">{r.async}</td>
+											</>
+										) : (
+											<td class="ref-value" colspan="2">
+												{r.sync} <span class="ref-note">Same for synchronous and asynchronous Apex.</span>
+											</td>
+										)
+									) : (
+										<td class="ref-value">{r.sync}</td>
+									)}
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			</section>
+		))
+	}
+
+	<section aria-labelledby="check-in-code" class="prose">
+		<h2 id="check-in-code">Check limits in your own code</h2>
+		<p>
+			The <code>Limits</code> class tells you what a transaction has used and what it may use. Log it while debugging, or
+			stop work early when you get close.
+		</p>
+		<pre class="tool-code"><code>System.debug('SOQL: ' + Limits.getQueries() + ' of ' + Limits.getLimitQueries());
+System.debug('DML statements: ' + Limits.getDmlStatements() + ' of ' + Limits.getLimitDmlStatements());
+System.debug('CPU ms: ' + Limits.getCpuTime() + ' of ' + Limits.getLimitCpuTime());
+System.debug('Heap bytes: ' + Limits.getHeapSize() + ' of ' + Limits.getLimitHeapSize());</code></pre>
+		<p>
+			To see how much of the 24-hour asynchronous Apex capacity is left, call the REST API limits resource or
+			<code>OrgLimits.getMap()</code>.
+		</p>
+	</section>
+
+	<section aria-labelledby="stay-under" class="prose">
+		<h2 id="stay-under">Staying under the limits</h2>
+		<ul>
+			<li><strong>Bulkify.</strong> Triggers receive up to 200 records at once, so never run a query or DML statement inside a loop over them.</li>
+			<li><strong>Query once, use a Map.</strong> Load related records into a <code>Map&lt;Id, SObject&gt;</code> before the loop instead of querying per record.</li>
+			<li><strong>Be selective.</strong> Filter on indexed fields, select only the fields you need, and add <code>LIMIT</code> where it makes sense.</li>
+			<li><strong>Move heavy work to async.</strong> Queueable or Batch Apex gets higher SOQL, heap and CPU limits and splits large jobs into separate transactions.</li>
+			<li><strong>Watch the whole transaction.</strong> Triggers, flows and packages that run in the same transaction share the same limits.</li>
+		</ul>
+	</section>
+
+	<script>
+		import '../../scripts/table-filter';
+	</script>
+</ToolLayout>

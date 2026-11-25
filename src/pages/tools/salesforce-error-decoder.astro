@@ -1,0 +1,156 @@
+---
+// /tools/salesforce-error-decoder/: curated reference of common Salesforce errors.
+// Every entry is server-rendered with an anchor; the search box is a small
+// client script that matches pasted text with src/lib/tools/error-match.ts.
+import '../../styles/tool-salesforce-error-decoder.css';
+import ToolLayout from '../../components/tools/ToolLayout.astro';
+import { CATEGORY_LABELS, CATEGORY_ORDER, ERRORS, ERRORS_META } from '../../data/salesforce-errors';
+
+const groups = CATEGORY_ORDER.map((cat) => ({ cat, ...CATEGORY_LABELS[cat], items: ERRORS.filter((e) => e.category === cat) }));
+const entriesJson = JSON.stringify(ERRORS.map((e) => ({ id: e.id, code: e.code, typicalMessage: e.typicalMessage, match: e.match, generic: e.generic }))).replace(/</g, '\\u003c');
+const exampleText = 'System.DmlException: Insert failed. First exception on row 0; first error: FIELD_CUSTOM_VALIDATION_EXCEPTION, Amount must be positive: [Amount]';
+
+const faq = [
+	{
+		q: 'What is the difference between an error code and an error message in Salesforce?',
+		a: 'The code is a fixed identifier such as REQUIRED_FIELD_MISSING or System.NullPointerException that says what kind of failure happened. The message is human-readable text that can include field names, IDs or your own validation rule text. Search for the code first, then use the message to find the field or record.',
+	},
+	{
+		q: 'What does "first error" mean in a System.DmlException?',
+		a: 'System.DmlException is a wrapper. The text after "first error:" is the real status code and message for the first failing record, and "row 0" is the first record in the list because rows are counted from zero. Using Database.insert with allOrNone set to false lets you read the error of every record.',
+	},
+	{
+		q: 'Why does CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY appear with another exception after "caused by"?',
+		a: 'It wraps an error raised by a trigger, flow or process that ran while the record was being saved. The exception after "caused by" is the real problem, and the trigger name and line number show where it happened. Without a "caused by" part, the code can also mean you lack permission to create, update or activate the record.',
+	},
+	{
+		q: 'How do I see the full error for an Apex or automation failure?',
+		a: 'Open Debug Logs in Setup, add a trace flag for the user, reproduce the problem and open the log. Search it for EXCEPTION_THROWN, FATAL_ERROR, VALIDATION_FAIL and CUMULATIVE_LIMIT_USAGE. In VS Code or the CLI you can also tail logs with sf apex tail log.',
+	},
+	{
+		q: 'Is this list complete?',
+		a: `No. Salesforce documents hundreds of status codes, and this page covers ${ERRORS.length} of the most common errors with advice written by SFDX Talk. For a code that is not listed, check the StatusCode list in the SOAP API Developer Guide, which is linked as the source.`,
+	},
+	{
+		q: 'Does the decoder send my error message anywhere?',
+		a: 'No. Matching runs in your browser and the text you paste is not sent to SFDX Talk or anyone else. Still, remove record IDs, names and other customer data from errors before you share them with others.',
+	},
+];
+
+const tldr =
+	'Find the status code or exception name in your Salesforce error, such as REQUIRED_FIELD_MISSING or System.QueryException, then read its cause and fix. Paste the full message below to match it against 45 common errors, or browse the list by category.';
+---
+
+<ToolLayout
+	slug="salesforce-error-decoder"
+	title="Salesforce Error Message Meaning and Fix: Decoder | SFDX Talk"
+	h1="Salesforce error message meaning and fix"
+	description={`Paste a Salesforce error message and get its cause and fix. ${ERRORS.length} common DML, API, Apex, SOQL, limit and deployment errors explained. Free, runs in your browser.`}
+	tldr={tldr}
+	faq={faq}
+	modified={new Date(`${ERRORS_META.verified}T00:00:00Z`)}
+	source={{
+		name: ERRORS_META.sourceName,
+		url: ERRORS_META.source,
+		release: ERRORS_META.release,
+		apiVersion: ERRORS_META.apiVersion,
+		verified: ERRORS_META.verified,
+	}}
+>
+	<section aria-labelledby="decoder" class="err-tool" data-err-tool data-example={exampleText}>
+		<h2 id="decoder">Decode an error message</h2>
+		<p class="tool-nojs">The search needs JavaScript. Every error below is listed in full and grouped by category, so you can browse or use Ctrl+F.</p>
+		<div class="tool-js">
+			<label for="err-input">Paste an error message or a stack trace line</label>
+			<textarea id="err-input" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="REQUIRED_FIELD_MISSING, Required fields are missing: [Name]"></textarea>
+			<div class="err-actions">
+				<button type="button" data-action="example">Try an example</button>
+				<button type="button" data-action="clear">Clear</button>
+			</div>
+			<p class="err-summary" role="status" aria-live="polite" data-err-summary>Paste an error message to find it in the reference.</p>
+			<ul class="err-results" data-err-results></ul>
+		</div>
+		<script type="application/json" id="err-data" set:html={entriesJson} />
+	</section>
+
+	<section aria-labelledby="how-to-read" class="prose">
+		<h2 id="how-to-read">How to read a Salesforce error</h2>
+		<p>
+			Most Salesforce errors have two parts: a <strong>code</strong> and a <strong>message</strong>. The code is a fixed name
+			such as <code>UNABLE_TO_LOCK_ROW</code> (an API status code) or <code>System.NullPointerException</code> (an Apex
+			exception). The message adds details, such as the field, the record ID or the text of your own validation rule. Look
+			up the code first.
+		</p>
+		<ul>
+			<li>
+				<strong>API and DML errors</strong> use UPPER_SNAKE_CASE status codes. They appear in the UI, in API responses and
+				after <code>first error:</code> in an Apex <code>System.DmlException</code>.
+			</li>
+			<li>
+				<strong>Apex errors</strong> are exceptions named after their class, such as <code>System.QueryException</code>,
+				followed by a message and a stack trace with class, line and column.
+			</li>
+			<li>
+				<strong>Deployment errors</strong> come from the metadata API: compile errors, missing components and test or
+				coverage failures. They have no status code, so search for the message text.
+			</li>
+		</ul>
+		<p>
+			Some errors are wrappers around the real cause. <code>System.DmlException</code> and
+			<code>CANNOT_INSERT_UPDATE_ACTIVATE_ENTITY</code> name the underlying error later in the text, after
+			<code>first error:</code> or <code>caused by:</code>. Find the inner error in the list below.
+		</p>
+		<h3>Where to see the full error</h3>
+		<p>
+			In Setup, open <strong>Debug Logs</strong>, add a trace flag for the affected user and reproduce the problem. In the log, search for
+			<code>EXCEPTION_THROWN</code>, <code>FATAL_ERROR</code>, <code>VALIDATION_FAIL</code> and <code>CUMULATIVE_LIMIT_USAGE</code>. From the CLI,
+			<code>sf apex tail log</code> streams logs while you test. For limit errors, see the
+			<a href="/tools/governor-limits/">governor limits reference</a>.
+		</p>
+	</section>
+
+	<section aria-labelledby="index">
+		<h2 id="index">Errors by category</h2>
+		<ul class="err-index">
+			{
+				groups.map((g) => (
+					<li>
+						<a href={`#cat-${g.cat}`}>{g.label}</a>
+						<span>{g.items.length} errors. {g.blurb}</span>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+
+	{
+		groups.map((g) => (
+			<section aria-labelledby={`cat-${g.cat}`}>
+				<h2 id={`cat-${g.cat}`}>{g.label}</h2>
+				{g.items.map((e) => (
+					<article class="err-entry" id={e.id}>
+						<h3>{e.code}</h3>
+						{e.typicalMessage && <p class="err-msg">Typical message: <code>{e.typicalMessage}</code></p>}
+						<h4>Cause</h4>
+						<p class="err-cause">{e.cause}</p>
+						<h4>How to fix</h4>
+						<ol>{e.fixSteps.map((s) => <li>{s}</li>)}</ol>
+						{e.example && (
+							<pre class="tool-code"><code>{e.example.code}</code></pre>
+						)}
+						{(e.refs?.length || e.internal) && (
+							<ul class="err-links">
+								{e.internal && <li><a href={e.internal.href}>{e.internal.label}</a></li>}
+								{e.refs?.map((r) => <li><a href={r.url} rel="noopener">{r.label}</a></li>)}
+							</ul>
+						)}
+					</article>
+				))}
+			</section>
+		))
+	}
+
+	<script>
+		import '../../scripts/error-decoder';
+	</script>
+</ToolLayout>

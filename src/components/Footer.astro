@@ -1,4 +1,8 @@
 ---
+import { PROMPTS_INDEX_URL, promptsHubIndexable } from '../lib/prompts';
+import { SKILLS_INDEX_URL, skillsHubIndexable } from '../lib/skills';
+import { TOOLS_INDEX_URL, toolsHubIndexable } from '../lib/tools';
+
 const year = new Date().getFullYear();
 ---
 
@@ -6,6 +10,9 @@ const year = new Date().getFullYear();
 	<div class="site-footer-inner">
 		<nav class="site-footer-nav" aria-label="Site">
 			<a href="/docs/">All docs</a>
+			{toolsHubIndexable() && <a href={TOOLS_INDEX_URL}>Tools</a>}
+			{skillsHubIndexable() && <a href={SKILLS_INDEX_URL}>Skills</a>}
+			{promptsHubIndexable() && <a href={PROMPTS_INDEX_URL}>Prompts</a>}
 			<a href="/releases/">Releases</a>
 			<a href="/tags/">Tags</a>
 			<a href="/feed.xml" data-astro-prefetch="false">Feed</a>

@@ -1,0 +1,127 @@
+---
+// Tools hub: /tools/ — free, in-browser Salesforce developer tools.
+// Live tools are linked and structured-data'd; planned tools are shown as plain
+// "coming soon" text. The page is noindex until the first tool is live
+// (src/lib/tools.ts), so a thin hub never competes with the real tool pages.
+import '../../styles/hubs.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { TOOLS_INDEX_URL, TOOL_GROUPS, TOOL_GROUP_KEYS, liveTools, toolUrl, toolsHubIndexable, toolsInGroup } from '../../lib/tools';
+import { toolsHubGraph, type Crumb } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+
+const path = TOOLS_INDEX_URL;
+const title = 'Free Salesforce Developer Tools (Run in Your Browser) | SFDX Talk';
+const description =
+	'Free Salesforce developer tools that run in your browser: governor limits, SOQL formatter, ID converter, package.xml generator and more. No sign-in, nothing uploaded.';
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Tools', path },
+];
+
+const live = liveTools();
+const groups = TOOL_GROUP_KEYS.map((key) => ({ key, ...TOOL_GROUPS[key], tools: toolsInGroup(key) })).filter((g) => g.tools.length > 0);
+const planned = groups.flatMap((g) => g.tools).filter((t) => t.status === 'planned').length;
+
+const faq = [
+	{
+		q: 'Are these Salesforce tools free?',
+		a: 'Yes. Every tool on SFDX Talk is free to use, with no account and no sign-in.',
+	},
+	{
+		q: 'Does anything I paste leave my browser?',
+		a: 'No. Each tool runs entirely in your browser, so queries, code, logs and manifests are processed on your own device and are never uploaded to SFDX Talk or anyone else.',
+	},
+	{
+		q: 'Do the tools connect to my Salesforce org?',
+		a: 'No. They never ask you to log in to an org or grant access. You paste or drop in the text you want to work with. For tasks that need a live org, use the Salesforce CLI or a tool you already trust.',
+	},
+	{
+		q: 'Where do the limits and error explanations come from?',
+		a: 'Each entry cites the official Salesforce documentation it was checked against, together with the Salesforce release and API version, so you can verify it.',
+	},
+	{
+		q: 'Is SFDX Talk affiliated with Salesforce?',
+		a: SITE.disclaimer,
+	},
+];
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	noindex={!toolsHubIndexable()}
+	jsonLd={toolsHubGraph(
+		{ path, title, description, crumbs },
+		live.map((t) => ({ name: t.name, tagline: t.tagline, path: toolUrl(t) })),
+		faq,
+	)}
+>
+	<div class="page-narrow tools-hub">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>Free Salesforce developer tools</h1>
+		<p class="tools-lead">
+			Small, fast tools for Salesforce developers: format SOQL, look up governor limits, convert record IDs, build a
+			<code>package.xml</code>, and check code before you deploy. Everything runs in your browser. There is no sign-in, no org
+			connection and nothing is uploaded.
+		</p>
+
+		<ul class="tools-promises" aria-label="How the tools work">
+			<li><strong>Private.</strong> Your input never leaves your device.</li>
+			<li><strong>Sourced.</strong> Limits and errors cite official Salesforce docs and the release they were checked against.</li>
+			<li><strong>Connected.</strong> Every result links to the guide that explains it.</li>
+		</ul>
+
+		{
+			live.length === 0 && (
+				<p class="tools-status">
+					We are building the first {planned} tools now, in the order shown below. Each one ships as its own page.
+					<a href="/docs/">Browse the developer guides</a> in the meantime.
+				</p>
+			)
+		}
+
+		{
+			groups.map((g) => (
+				<section aria-labelledby={`group-${g.key}`}>
+					<h2 id={`group-${g.key}`}>{g.label}</h2>
+					<p class="tools-group-text">{g.description}</p>
+					<ul class="tools-grid">
+						{g.tools.map((t) => (
+							<li class={t.status === 'live' ? 'tool-card' : 'tool-card tool-card-planned'}>
+								{t.status === 'live' ? (
+									<a href={toolUrl(t)}>
+										<span class="tool-card-title">{t.name}</span>
+										<span class="tool-card-text">{t.tagline}</span>
+									</a>
+								) : (
+									<>
+										<span class="tool-card-title">{t.name}</span>
+										<span class="tool-card-text">{t.tagline}</span>
+										<span class="tool-card-soon">Coming soon</span>
+									</>
+								)}
+							</li>
+						))}
+					</ul>
+				</section>
+			))
+		}
+
+		<section aria-labelledby="tools-faq">
+			<h2 id="tools-faq">Frequently asked questions</h2>
+			{
+				faq.map((f) => (
+					<>
+						<h3>{f.q}</h3>
+						<p>{f.a}</p>
+					</>
+				))
+			}
+		</section>
+
+		<p class="tools-footnote">
+			Missing a tool you need? <a href={`${SITE.repo.url}/issues/new`}>Suggest it on GitHub</a>.
+		</p>
+	</div>
+</BaseLayout>

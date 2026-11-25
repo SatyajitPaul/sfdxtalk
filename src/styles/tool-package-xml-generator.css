@@ -1,0 +1,29 @@
+.pkg-tool label { display: block; margin-bottom: var(--space-2); font-weight: 600; }
+.pkg-tool input[type='search'], .pkg-tool input[type='text'], .pkg-tool textarea {
+	width: 100%; box-sizing: border-box; padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: inherit; font: inherit;
+}
+.pkg-tool textarea { font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 0.85rem; }
+.pkg-tool input:focus-visible, .pkg-tool textarea:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.pkg-grid { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
+@media (min-width: 52rem) { .pkg-grid { grid-template-columns: 1fr 1fr; } }
+.pkg-list { max-height: 18rem; overflow: auto; margin: var(--space-2) 0 0; padding: 0; list-style: none; border: 1px solid var(--border); border-radius: var(--radius); }
+.pkg-list li { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); border-bottom: 1px solid var(--border); }
+.pkg-list li:last-child { border-bottom: 0; }
+.pkg-list label { display: flex; flex: 1; align-items: center; gap: var(--space-2); margin: 0; font-weight: 400; cursor: pointer; }
+.pkg-list a { font-size: var(--step--1); white-space: nowrap; }
+.pkg-selected { margin: var(--space-3) 0 0; padding: 0; list-style: none; display: grid; gap: var(--space-3); }
+.pkg-selected li { padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.pkg-selected label { font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); }
+.pkg-selected textarea { min-height: 3.5rem; }
+.pkg-hint { margin: var(--space-1) 0 0; color: var(--text-muted); font-size: var(--step--1); }
+.pkg-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.pkg-actions button, .pkg-ver button {
+	padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius);
+	background: var(--surface); color: inherit; font: inherit; cursor: pointer;
+}
+.pkg-actions button:hover { border-color: var(--link); }
+.pkg-actions button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.pkg-ver { max-width: 10rem; margin-top: var(--space-3); }
+.pkg-preview { min-height: 6rem; white-space: pre; }
+.pkg-error { color: var(--warning, inherit); }

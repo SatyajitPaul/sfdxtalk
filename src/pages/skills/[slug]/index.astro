@@ -1,0 +1,158 @@
+---
+// /skills/{slug}/ — one skill: what it is, what it needs, how it works, the full SKILL.md and download links.
+import '../../../styles/tools.css';
+import '../../../styles/library.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import SkillInstall from '../../../components/library/SkillInstall.astro';
+import { resolveRelated } from '../../../lib/library-related';
+import { skillGraph, type Crumb } from '../../../lib/schema';
+import { SITE } from '../../../lib/site';
+import { SKILLS_INDEX_URL, SKILL_CATEGORIES, getSkills, skillUrl } from '../../../lib/skills';
+
+export function getStaticPaths() {
+	return getSkills().map((skill) => ({ params: { slug: skill.slug }, props: { skill } }));
+}
+const { skill } = Astro.props;
+const path = skillUrl(skill);
+const zipPath = `/skills/${skill.slug}.zip`;
+const rawPath = `/skills/${skill.slug}/SKILL.md`;
+const title = `${skill.title}: Salesforce Skill for AI Assistants | SFDX Talk`;
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Skills', path: SKILLS_INDEX_URL },
+	{ name: skill.title, path },
+];
+const related = await resolveRelated(skill.related, `src/skills/${skill.slug}/meta.ts`);
+const fileNames = Object.keys(skill.files).sort((a, b) => (a === 'SKILL.md' ? -1 : b === 'SKILL.md' ? 1 : a.localeCompare(b)));
+const relatedGroups = [
+	{ id: 'rel-skills', label: 'Related skills', links: related.skills },
+	{ id: 'rel-prompts', label: 'Related prompts', links: related.prompts },
+	{ id: 'rel-tools', label: 'Related tools', links: related.tools },
+	{ id: 'rel-docs', label: 'Related guides', links: related.docs },
+].filter((g) => g.links.length > 0);
+---
+
+<BaseLayout
+	title={title}
+	description={skill.description}
+	jsonLd={skillGraph({
+		path,
+		title,
+		name: skill.title,
+		description: skill.description,
+		summary: skill.summary,
+		crumbs,
+		faq: skill.faq,
+		published: new Date(`${skill.published}T00:00:00Z`),
+		modified: new Date(`${skill.updated}T00:00:00Z`),
+		keywords: skill.tags,
+		section: SKILL_CATEGORIES[skill.category],
+		citations: skill.refs,
+		version: skill.version,
+		zipPath,
+		rawPath,
+	})}
+	markdownPath={`/skills/${skill.slug}.md`}
+>
+	<div class="page-narrow lib-page">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>{skill.title}</h1>
+		<p class="tool-meta">
+			<span class="badge badge-release">{SKILL_CATEGORIES[skill.category]}</span>
+			<span class="badge">v{skill.version}</span>
+			<span>Updated <time datetime={skill.updated}>{skill.updated}</time></span>
+			<span>License: MIT</span>
+		</p>
+		<div class="tldr">
+			<p class="tldr-label">Quick answer</p>
+			<p>{skill.summary}</p>
+		</div>
+
+		<div class="lib-dl">
+			<a class="lib-btn" href={zipPath} download>Download {skill.slug}.zip</a>
+			<a class="lib-btn lib-btn-quiet" href={rawPath}>Raw SKILL.md</a>
+			<a class="lib-btn lib-btn-quiet" href={`/skills/${skill.slug}.md`}>Markdown page</a>
+		</div>
+
+		<section aria-labelledby="does">
+			<h2 id="does">What this skill does</h2>
+			<ul>{skill.does.map((d) => <li>{d}</li>)}</ul>
+		</section>
+
+		<section aria-labelledby="when">
+			<h2 id="when">When to use it</h2>
+			<ul>{skill.whenToUse.map((d) => <li>{d}</li>)}</ul>
+		</section>
+
+		<section aria-labelledby="needs">
+			<h2 id="needs">What you need</h2>
+			<ul>
+				<li><strong>Connection:</strong> {skill.needs.connection}</li>
+				<li><strong>Permissions:</strong> {skill.needs.permissions}</li>
+			</ul>
+		</section>
+
+		<section aria-labelledby="how">
+			<h2 id="how">How it works</h2>
+			<ol>{skill.howItWorks.map((d) => <li>{d}</li>)}</ol>
+		</section>
+
+		<section aria-labelledby="safety">
+			<h2 id="safety">Safety rules built into the skill</h2>
+			<ul>{skill.safety.map((d) => <li>{d}</li>)}</ul>
+		</section>
+
+		<section aria-labelledby="ask">
+			<h2 id="ask">Try asking</h2>
+			<ul>{skill.tryAsking.map((d) => <li>{d}</li>)}</ul>
+		</section>
+
+		<SkillInstall slug={skill.slug} />
+
+		<section aria-labelledby="skill-file">
+			<h2 id="skill-file">The skill file (SKILL.md)</h2>
+			<p>This is the exact file in the download. Read it before you install it.</p>
+			<pre class="lib-code"><code>{skill.skillMd}</code></pre>
+			<p class="lib-note">Files in the download: {fileNames.map((f, i) => <>{i > 0 && ', '}<code>{skill.slug}/{f}</code></>)}</p>
+		</section>
+
+		<section class="prose" aria-labelledby="skill-faq">
+			<h2 id="skill-faq">Frequently asked questions</h2>
+			{
+				skill.faq.map((f) => (
+					<>
+						<h3>{f.q}</h3>
+						<p>{f.a}</p>
+					</>
+				))
+			}
+		</section>
+
+		{
+			relatedGroups.map((g) => (
+				<section aria-labelledby={g.id}>
+					<h2 id={g.id}>{g.label}</h2>
+					<ul class="related-list">
+						{g.links.map((l) => (
+							<li>
+								<a href={l.href}>{l.title}</a>
+								<p>{l.text}</p>
+							</li>
+						))}
+					</ul>
+				</section>
+			))
+		}
+
+		<section aria-labelledby="skill-sources">
+			<h2 id="skill-sources">Official sources</h2>
+			<ul>{skill.refs.map((r) => <li><a href={r} rel="noopener">{r}</a></li>)}</ul>
+		</section>
+
+		<p class="lib-note">
+			{SITE.disclaimer} Skills are provided as is, under the MIT license. Review what a skill does and test it in a sandbox before you
+			rely on it. <a href={SKILLS_INDEX_URL}>All skills</a>
+		</p>
+	</div>
+</BaseLayout>

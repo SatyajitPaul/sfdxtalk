@@ -1,0 +1,183 @@
+---
+// /tools/package-xml-generator/ — build a Metadata API manifest. The explanation,
+// example (built with the same function the page script runs) and common-types
+// table are static HTML; the type checklist is fetched lazily from
+// /tools/package-xml-types.json so hundreds of types stay out of the page.
+import '../../styles/tool-package-xml-generator.css';
+import ToolLayout from '../../components/tools/ToolLayout.astro';
+import { COMMON_TYPES, PACKAGE_XML_META } from '../../data/package-xml-common-types';
+import { PACKAGE_XML_EXAMPLE } from '../../data/tool-exports/package-xml-generator';
+import { buildPackageXml, sfCommands } from '../../lib/tools/package-xml';
+
+const exampleXml = buildPackageXml(PACKAGE_XML_EXAMPLE);
+const cmd = sfCommands();
+
+const faq = [
+	{
+		q: 'What is a package.xml file?',
+		a: 'A package.xml is the manifest Metadata API uses to decide which components to retrieve or deploy. It lists metadata types, the members of each type, and an API version, using the namespace http://soap.sforce.com/2006/04/metadata.',
+	},
+	{
+		q: 'What does the * (wildcard) mean in a package.xml?',
+		a: 'A member of * asks for all components of that type. Not every metadata type supports the wildcard, so check the type in the Metadata API reference. Listing members by name is the explicit alternative, and this generator keeps only the * when you enter it together with other members of the same type.',
+	},
+	{
+		q: 'How do I retrieve metadata with a package.xml?',
+		a: 'Run sf project retrieve start --manifest package.xml --target-org followed by your org alias or username. The command retrieves the components listed in the manifest from that org into your project.',
+	},
+	{
+		q: 'How do I deploy metadata with a package.xml?',
+		a: 'Run sf project deploy start --manifest package.xml --target-org followed by your org alias or username. Only the components listed in the manifest are deployed.',
+	},
+	{
+		q: 'Can the Salesforce CLI create a package.xml for me?',
+		a: 'Yes. The sf project generate manifest command writes a manifest, for example from the source directories of your project with --source-dir, or from metadata types you name with --metadata. Run it with --help for the flags your CLI version supports.',
+	},
+	{
+		q: 'Which API version should I put in package.xml?',
+		a: `The version element sets the Metadata API version used for the retrieve or deploy. This generator defaults to ${PACKAGE_XML_META.apiVersion}, the API version of ${PACKAGE_XML_META.release}. Use the version your project or sandbox supports.`,
+	},
+	{
+		q: 'Does the generator send my component names anywhere?',
+		a: 'No. The type list is a static file on this site, and everything you type is processed in your browser.',
+	},
+];
+
+const tldr =
+	'A package.xml is a manifest of metadata types, members and an API version that tells Metadata API what to retrieve or deploy. Pick types below, list members or use * for all, then copy or download the file and run it with sf project retrieve start or sf project deploy start.';
+---
+
+<ToolLayout
+	slug="package-xml-generator"
+	title="Salesforce package.xml Generator (with sf CLI commands) | SFDX Talk"
+	h1="Salesforce package.xml generator"
+	description="Pick Salesforce metadata types and members, get a valid package.xml to copy or download, and the matching sf project retrieve and deploy commands. Runs in your browser."
+	tldr={tldr}
+	faq={faq}
+	modified={new Date(`${PACKAGE_XML_META.verified}T00:00:00Z`)}
+	source={{
+		name: PACKAGE_XML_META.sourceName,
+		url: PACKAGE_XML_META.source,
+		release: PACKAGE_XML_META.release,
+		apiVersion: PACKAGE_XML_META.apiVersion,
+		verified: PACKAGE_XML_META.verified,
+	}}
+>
+	<section aria-labelledby="generator" class="pkg-tool" data-pkg-tool data-src="/tools/package-xml-types.json">
+		<h2 id="generator">Build a package.xml</h2>
+		<p class="tool-nojs">The generator needs JavaScript. The explanation, example and common types below work without it.</p>
+		<div class="tool-js">
+			<div class="pkg-grid">
+				<div>
+					<label for="pkg-search">Search metadata types</label>
+					<input id="pkg-search" type="search" data-pkg-search placeholder="ApexClass, Flow, PermissionSet…" autocomplete="off" spellcheck="false" />
+					<p class="pkg-hint" role="status" aria-live="polite" data-pkg-status>Click the search box to load the list of types.</p>
+					<ul class="pkg-list" data-pkg-list aria-label="Metadata types"></ul>
+				</div>
+				<div>
+					<p class="pkg-hint">Selected types. Use <code>*</code> for all members, or list one member per line.</p>
+					<ul class="pkg-selected" data-pkg-selected></ul>
+					<div class="pkg-ver">
+						<label for="pkg-version">API version</label>
+						<input id="pkg-version" type="text" data-pkg-version value={PACKAGE_XML_META.apiVersion} inputmode="decimal" autocomplete="off" />
+					</div>
+				</div>
+			</div>
+			<label for="pkg-preview" style="margin-top: var(--space-4)">package.xml</label>
+			<textarea id="pkg-preview" class="pkg-preview" data-pkg-preview readonly rows="12"></textarea>
+			<p class="pkg-error" role="alert" data-pkg-error></p>
+			<div class="pkg-actions">
+				<button type="button" data-action="copy">Copy package.xml</button>
+				<button type="button" data-action="download">Download package.xml</button>
+				<button type="button" data-action="clear">Clear selection</button>
+			</div>
+		</div>
+		<h3>Commands</h3>
+		<p>Save the file as <code>package.xml</code>, then run one of these from your project folder. Replace the placeholder with an org alias or username, or omit <code>--target-org</code> to use your default org.</p>
+		<pre class="tool-code"><code># Retrieve the listed components from the org
+{cmd.retrieve}
+
+# Deploy the listed components to the org
+{cmd.deploy}
+
+# Or let the CLI write a manifest from your project's source folder
+{cmd.generate}</code></pre>
+		<div class="tool-js"><div class="pkg-actions">
+			<button type="button" data-action="copycmd" data-text={cmd.retrieve}>Copy retrieve command</button>
+			<button type="button" data-action="copycmd" data-text={cmd.deploy}>Copy deploy command</button>
+		</div></div>
+	</section>
+
+	<section aria-labelledby="what-is" class="prose">
+		<h2 id="what-is">What a package.xml is</h2>
+		<p>
+			Metadata API works with components such as Apex classes, flows and objects. A <code>package.xml</code> manifest says which of them a
+			retrieve or deploy should touch. The file has a root <code>Package</code> element in the
+			<code>http://soap.sforce.com/2006/04/metadata</code> namespace, one <code>types</code> block per metadata type, and a final
+			<code>version</code> element. Inside each <code>types</code> block, <code>members</code> lists component names and <code>name</code> is the
+			metadata type's API name, such as <code>ApexClass</code>.
+		</p>
+		<p>
+			The generator writes types and members in sorted order, removes duplicates and escapes characters that XML reserves. Sorting is a
+			convention that keeps diffs stable; the order does not change what is retrieved.
+		</p>
+		<h3>The wildcard</h3>
+		<p>
+			A member of <code>*</code> asks for all components of a type. Not every metadata type supports it, so confirm the type in the
+			<a href={PACKAGE_XML_META.source} rel="noopener">Metadata API Developer Guide</a> or in our type guides below before relying on it. For types
+			that do not support the wildcard, list the members by name. Naming members is also the safer choice for deployments, because the
+			manifest then states exactly what will change.
+		</p>
+		<p>
+			Some members are qualified. A custom field is <code>Account.Region__c</code>, written as the object name, a dot and the field name.
+		</p>
+	</section>
+
+	<section aria-labelledby="example">
+		<h2 id="example">Worked example</h2>
+		<p>This manifest was produced at build time by the same function the generator runs, from two named Apex classes, all Lightning Web Components and one custom field.</p>
+		<pre class="tool-code"><code>{exampleXml}</code></pre>
+	</section>
+
+	<section aria-labelledby="retrieve-deploy" class="prose">
+		<h2 id="retrieve-deploy">Retrieve versus deploy</h2>
+		<ul>
+			<li><strong>Retrieve</strong> reads the components named in the manifest from an org into your project. Use it to pull metadata that exists in an org but not in your repository.</li>
+			<li><strong>Deploy</strong> sends the components named in the manifest to an org. Use it to push a defined set of changes instead of the whole project.</li>
+		</ul>
+		<p>
+			Both commands use the modern <code>sf</code> CLI and the <code>--manifest</code> flag. See the
+			<a href="/docs/sf-cli/salesforce-cli-reference-guide/">Salesforce CLI reference guide</a> for deploy and retrieve options such as test levels and validation,
+			and <a href="/docs/sf-cli/create-scratch-org/">creating a scratch org</a> for a safe place to try a deployment.
+		</p>
+	</section>
+
+	<section aria-labelledby="common-types">
+		<h2 id="common-types">Common metadata types</h2>
+		<p>These API names go in the <code>name</code> element. Each links to our guide for the type, which covers its fields, file layout and deployment behavior.</p>
+		<div class="table-wrap">
+			<table class="ref-table">
+				<thead>
+					<tr>
+						<th scope="col">API name</th>
+						<th scope="col">What it covers</th>
+					</tr>
+				</thead>
+				<tbody>
+					{
+						COMMON_TYPES.map((t) => (
+							<tr>
+								<th scope="row"><a href={`/docs/metadata/${t.slug}-metadata-type/`}><code>{t.name}</code></a></th>
+								<td>{t.what}</td>
+							</tr>
+						))
+					}
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<script>
+		import '../../scripts/package-xml-generator';
+	</script>
+</ToolLayout>

@@ -10,6 +10,8 @@
 		"deploy": "astro build && wrangler deploy && node scripts/indexnow.mjs",
 		"indexnow": "node scripts/indexnow.mjs",
 		"check:budget": "node scripts/check-budget.mjs",
+		"test": "node --test src/lib/",
+		"check:library": "node scripts/check-library.mjs",
 		"check:lighthouse": "lhci autorun"
 	},
 	"dependencies": {

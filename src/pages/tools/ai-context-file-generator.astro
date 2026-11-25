@@ -1,0 +1,183 @@
+---
+// /tools/ai-context-file-generator/ - builds CLAUDE.md, AGENTS.md, Cursor rule and
+// Copilot instruction files for Salesforce projects. Explanations and the worked
+// example are static HTML (the example uses the same generate() the page script runs).
+import ToolLayout from '../../components/tools/ToolLayout.astro';
+import { AI_RULES_META, AI_TOPICS } from '../../data/ai-rules';
+import { ALL_TOPIC_IDS, TARGETS, generate } from '../../lib/tools/ai-context';
+import '../../styles/tool-ai-context-file-generator.css';
+
+const example = generate({ target: 'claude', topics: ['apex', 'triggers', 'security', 'testing'], facts: { projectName: 'Acme Sales', apiVersion: AI_RULES_META.apiVersion, coverageTarget: 85, orgTypes: 'scratch orgs for development, one UAT sandbox' } });
+const cursorExample = generate({ target: 'cursor', topics: ['apex'], facts: { projectName: 'Acme Sales' } }).split('\n').slice(0, 6).join('\n');
+const ruleCount = AI_TOPICS.reduce((n, t) => n + t.rules.length, 0);
+
+const faq = [
+	{
+		q: 'What is a CLAUDE.md file for Salesforce development?',
+		a: 'It is a Markdown file in your project root that Claude Code reads at the start of every session. For a Salesforce DX project it holds rules such as bulkify Apex, no SOQL or DML in loops, one trigger per object, and use the sf CLI, plus facts like the API version and source directory.',
+	},
+	{
+		q: 'Where do I put each file?',
+		a: 'CLAUDE.md and AGENTS.md go in the project root. Cursor rules go in .cursor/rules/ as an .mdc file with description, globs and alwaysApply frontmatter. GitHub Copilot reads .github/copilot-instructions.md. The tool shows the target path above the preview.',
+	},
+	{
+		q: 'Do I need both CLAUDE.md and AGENTS.md?',
+		a: 'Usually not. Claude Code can read AGENTS.md as the project instructions when no CLAUDE.md exists, and Cursor also reads AGENTS.md. If your team uses several assistants, one AGENTS.md is the simplest choice. If a CLAUDE.md exists, Claude Code reads it instead of AGENTS.md.',
+	},
+	{
+		q: 'How long should the file be?',
+		a: 'Keep it short. Anthropic recommends targeting under 200 lines per CLAUDE.md because longer files use more context and reduce how well the instructions are followed. Deselect topics you do not need and add only rules specific to your project.',
+	},
+	{
+		q: 'Will these instructions guarantee correct Apex?',
+		a: 'No. Instructions improve the odds that an assistant follows your conventions, but assistants can still invent methods, miss limits or ignore a rule. Review every change, run your Apex and Jest tests, and run Salesforce Code Analyzer.',
+	},
+	{
+		q: 'Why does the file tell the assistant to verify against the API version?',
+		a: 'Assistants sometimes use methods, fields or metadata that do not exist, or deprecated features, especially for new releases. Naming the API version and telling the assistant to say when it is unsure reduces confident guessing.',
+	},
+	{
+		q: 'Is my project information uploaded?',
+		a: 'No. The file is built in your browser. Your settings (selected topics and the facts you type) are saved only in your browser\'s local storage, and nothing is sent to SFDX Talk or anyone else.',
+	},
+];
+
+const tldr =
+	'Pick your assistant, choose which Salesforce topics to include and enter a few project facts. The tool builds a CLAUDE.md, AGENTS.md, Cursor rule or Copilot instructions file you can copy or download, with rules such as bulkify Apex, no SOQL or DML in loops, one trigger per object, with sharing by default and use the sf CLI.';
+---
+
+<ToolLayout
+	slug="ai-context-file-generator"
+	title="CLAUDE.md for Salesforce Development: AI Context File Generator | SFDX Talk"
+	h1="CLAUDE.md for Salesforce development: AI context file generator"
+	description="Generate a CLAUDE.md, AGENTS.md, Cursor rules or GitHub Copilot instructions file with Salesforce best practices for Apex, LWC, SOQL, security, testing and the sf CLI. Free, runs in your browser."
+	tldr={tldr}
+	faq={faq}
+	modified={new Date(`${AI_RULES_META.verified}T00:00:00Z`)}
+	source={{
+		name: AI_RULES_META.sourceName,
+		url: AI_RULES_META.source,
+		release: AI_RULES_META.release,
+		apiVersion: AI_RULES_META.apiVersion,
+		verified: AI_RULES_META.verified,
+	}}
+>
+	<section aria-labelledby="generator" class="ai-tool" data-ai-tool>
+		<h2 id="generator">Generate your instruction file</h2>
+		<p class="tool-nojs">The generator needs JavaScript. The worked example, rule summary and guidance below work without it.</p>
+		<div class="tool-js">
+			<div class="ai-grid">
+				<div class="ai-panel">
+					<fieldset>
+						<legend>Topics</legend>
+						{AI_TOPICS.map((t) => (
+							<label class="ai-check"><input type="checkbox" name="ai-topic" value={t.id} checked /> {t.title}</label>
+						))}
+						<label class="ai-check"><input type="checkbox" name="ai-reasons" checked /> Include reasons</label>
+					</fieldset>
+					<label class="ai-field"><span>Project name (optional)</span><input type="text" data-fact="projectName" maxlength="80" autocomplete="off" /></label>
+					<label class="ai-field"><span>API version</span><input type="text" data-fact="apiVersion" data-default={AI_RULES_META.apiVersion} value={AI_RULES_META.apiVersion} maxlength="10" inputmode="decimal" autocomplete="off" /></label>
+					<label class="ai-field"><span>Source directory</span><input type="text" data-fact="sourceDir" data-default="force-app" value="force-app" maxlength="100" autocomplete="off" /></label>
+					<label class="ai-field"><span>Namespace (optional)</span><input type="text" data-fact="namespace" maxlength="15" autocomplete="off" /></label>
+					<label class="ai-field"><span>Test coverage target, 75 to 100 (optional)</span><input type="text" data-fact="coverageTarget" maxlength="4" inputmode="numeric" autocomplete="off" /></label>
+					<label class="ai-field"><span>Org types (optional)</span><input type="text" data-fact="orgTypes" maxlength="200" placeholder="scratch orgs, UAT sandbox" autocomplete="off" /></label>
+					<label class="ai-field"><span>CI and deployment notes (optional)</span><input type="text" data-fact="ciNotes" maxlength="300" placeholder="GitHub Actions validates on pull request" autocomplete="off" /></label>
+					<label class="ai-field"><span>Extra line (optional)</span><input type="text" data-fact="extra" maxlength="300" autocomplete="off" /></label>
+					<button type="button" data-action="reset">Reset</button>
+				</div>
+				<div>
+					<div class="ai-tabs" role="radiogroup" aria-label="Target assistant">
+						{TARGETS.map((t, i) => (
+							<label><input type="radio" name="ai-target" value={t.id} checked={i === 0} /><span>{t.label}</span></label>
+						))}
+					</div>
+					<p class="ai-path" data-ai-path>Save as CLAUDE.md</p>
+					<pre class="tool-code ai-preview" tabindex="0" aria-label="Generated file preview"><code data-ai-out></code></pre>
+					<div class="ai-actions">
+						<button type="button" data-action="copy">Copy</button>
+						<button type="button" data-action="download">Download</button>
+					</div>
+					<p role="status" aria-live="polite" data-ai-status></p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section aria-labelledby="what" class="prose">
+		<h2 id="what">What these files are and where assistants read them</h2>
+		<p>
+			AI coding assistants start every session without knowing your project. An instruction file is a short Markdown document in your
+			repository that they load automatically, so the assistant follows your conventions instead of generic ones. For Salesforce this
+			matters because generic code often runs fine in a unit test with one record and then fails in production with a governor limit
+			or a missing permission check.
+		</p>
+		<div class="table-wrap">
+			<table class="ref-table">
+				<thead><tr><th scope="col">Assistant</th><th scope="col">File</th><th scope="col">Notes</th></tr></thead>
+				<tbody>
+					{TARGETS.map((t) => (
+						<tr><th scope="row">{t.label}</th><td><code>{t.path}</code></td><td>{t.note}</td></tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+		<p>
+			The Cursor file is the only one with frontmatter. This is what the generator writes at the top of
+			<code>salesforce.mdc</code>: a description, comma-separated globs for your Salesforce source files, and <code>alwaysApply: false</code>
+			so the rule attaches when matching files are in context.
+		</p>
+		<pre class="tool-code"><code>{cursorExample}</code></pre>
+		<p>
+			Formats were checked against <a href={AI_RULES_META.source} rel="noopener">Claude Code memory</a>,
+			<a href={AI_RULES_META.otherSources[0].url} rel="noopener">Cursor rules</a>,
+			<a href={AI_RULES_META.otherSources[1].url} rel="noopener">GitHub Copilot custom instructions</a> and
+			<a href={AI_RULES_META.otherSources[2].url} rel="noopener">AGENTS.md</a>.
+		</p>
+	</section>
+
+	<section aria-labelledby="example">
+		<h2 id="example">Worked example</h2>
+		<p>This CLAUDE.md was generated at build time by the same code the tool runs, with four topics selected, API version 68.0 and an 85% coverage target.</p>
+		<pre class="tool-code"><code>{example}</code></pre>
+	</section>
+
+	<section aria-labelledby="topics" class="prose">
+		<h2 id="topics">What each topic covers</h2>
+		<p>The generator holds {ruleCount} rules in {AI_TOPICS.length} topics. They are our own conservative guidance, and all topics are on by default. Links go to related guides and tools.</p>
+		<ul class="ai-topic-list">
+			{AI_TOPICS.map((t) => (
+				<li>
+					<strong>{t.title}</strong> ({t.rules.length} rules): {t.summary}
+					{t.rules.filter((r) => r.href).map((r, i) => (
+						<span>{i === 0 ? ' See ' : ', '}<a href={r.href}>{r.label}</a></span>
+					))}
+				</li>
+			))}
+		</ul>
+	</section>
+
+	<section aria-labelledby="short" class="prose">
+		<h2 id="short">How to keep the file short and effective</h2>
+		<ul>
+			<li>Aim for under 200 lines. Anthropic notes that longer CLAUDE.md files use more context and reduce adherence.</li>
+			<li>Turn off topics your project does not use, for example LWC in a backend-only package.</li>
+			<li>Write specific, checkable rules ("never run SOQL in a loop") instead of vague ones ("write clean code").</li>
+			<li>Add only what the assistant cannot infer from the code: your API version, source directory, namespace, how to run tests and how you deploy.</li>
+			<li>Use the extra line for one project-specific rule, and prune the file when rules become outdated.</li>
+			<li>Remember the file is guidance, not enforcement. To block an action reliably, use tooling such as hooks, CI checks and branch protection.</li>
+		</ul>
+	</section>
+
+	<section aria-labelledby="limits" class="prose">
+		<h2 id="limits">Instructions help, they do not guarantee correct code</h2>
+		<p>
+			An instruction file raises the chance an assistant follows your rules, but it can still invent a method, misremember a limit or skip a rule.
+			Review every change, run your Apex tests and Jest tests, and scan with Salesforce Code Analyzer. Check limits in the
+			<a href="/tools/governor-limits/">governor limits reference</a> and pick async patterns with the <a href="/tools/async-apex-chooser/">async Apex chooser</a>.
+		</p>
+	</section>
+
+	<script>
+		import '../../scripts/ai-context-file-generator';
+	</script>
+</ToolLayout>

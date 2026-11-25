@@ -1,0 +1,204 @@
+---
+// /tools/salesforce-id-converter/ — 15 <-> 18 character Salesforce ID converter
+// with key-prefix lookup. The explanation, examples and prefix table are static
+// HTML (examples are computed at build time with the same function the page
+// script uses); the converter itself is a small client script.
+import ToolLayout from '../../components/tools/ToolLayout.astro';
+import { ID_PREFIXES, PREFIX_BY_KEY, PREFIX_META } from '../../data/sf-id-prefixes';
+import { ID_CONVERTER_META } from '../../data/tool-exports/salesforce-id-converter';
+import { toId18 } from '../../lib/tools/sf-id';
+
+const exampleIds = ['001D000000IqhSL', '000000000000Abc', '000000000000aBC', '005000000000001'];
+const examples = exampleIds.map((id15) => ({ id15, id18: toId18(id15), suffix: toId18(id15).slice(15) }));
+
+const faq = [
+	{
+		q: 'What is the difference between a 15-character and an 18-character Salesforce ID?',
+		a: 'The 15-character ID is case-sensitive. The 18-character ID is the same ID plus a 3-character suffix that encodes which of the first 15 characters are uppercase, which makes it safe to compare in case-insensitive tools such as Excel or Microsoft Access.',
+	},
+	{
+		q: 'How do I convert a 15-character Salesforce ID to 18 characters?',
+		a: 'Paste it into the converter above. To do it yourself, split the ID into three groups of five characters, set a bit for each uppercase letter in a group (first character is worth 1, then 2, 4, 8 and 16), and map each group total from 0 to 31 to the characters A to Z and 0 to 5. Append the three characters to the original ID.',
+	},
+	{
+		q: 'How do I convert an 18-character Salesforce ID to 15 characters?',
+		a: 'Remove the last three characters. Salesforce documents truncation as the way to get the 15-character version of an 18-character ID, although Salesforce recommends using the 18-character ID.',
+	},
+	{
+		q: 'Does Salesforce accept both ID formats?',
+		a: 'Yes. Salesforce accepts both 15 and 18-character IDs in the user interface, Apex and queries, and all API calls return the 18-character form. Use 18-character IDs when creating, editing or deleting data through the API.',
+	},
+	{
+		q: 'How do I get the 18-character ID in Apex, SOQL or a formula?',
+		a: 'In Apex, converting an Id to a String with String.valueOf(recordId) returns the 18-character form. In a formula field, the CASESAFEID function converts a 15-character ID to the 18-character version. Queries return the 18-character ID in the Id field.',
+	},
+	{
+		q: 'Why does the converter say "checksum mismatch"?',
+		a: 'The last three characters of an 18-character ID must match the case of the first 15. If the ID was lowercased, uppercased or retyped, the suffix no longer matches, and Salesforce rejects the changed ID. The tool shows the correct 18-character form for the first 15 characters, but if the case was lost the original ID cannot be recovered from the text alone.',
+	},
+	{
+		q: 'Does the converter upload my IDs?',
+		a: 'No. The conversion runs in your browser, and the IDs you paste are not sent to SFDX Talk or anyone else.',
+	},
+];
+
+const tldr =
+	'A 15-character Salesforce ID is case-sensitive; the 18-character version adds a 3-character suffix that encodes the case, so it works in case-insensitive tools. Paste IDs below to convert 15 to 18 or 18 to 15, in bulk, and to see which object each ID belongs to from its three-character prefix.';
+---
+
+<ToolLayout
+	slug="salesforce-id-converter"
+	title="Salesforce ID Converter: 15 to 18 Character (and Back) | SFDX Talk"
+	h1="Salesforce ID converter: 15 to 18 character, and back"
+	description="Convert Salesforce record IDs between 15 and 18 characters in bulk, check the case-safe suffix and identify the object from its prefix. Free, runs in your browser."
+	tldr={tldr}
+	faq={faq}
+	modified={new Date(`${ID_CONVERTER_META.verified}T00:00:00Z`)}
+	source={{
+		name: ID_CONVERTER_META.sourceName,
+		url: ID_CONVERTER_META.source,
+		release: ID_CONVERTER_META.release,
+		apiVersion: ID_CONVERTER_META.apiVersion,
+		verified: ID_CONVERTER_META.verified,
+	}}
+>
+	<section aria-labelledby="converter" class="id-tool" data-id-tool data-prefixes={JSON.stringify(PREFIX_BY_KEY)} data-example={examples.map((e) => e.id15).join('\n')}>
+		<h2 id="converter">Convert Salesforce IDs</h2>
+		<p class="tool-nojs">The converter needs JavaScript. The explanation, worked examples and prefix table below work without it.</p>
+		<div class="tool-js">
+			<label for="id-input">Paste IDs (15 or 18 characters), separated by new lines, spaces or commas</label>
+			<textarea id="id-input" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="001D000000IqhSL"></textarea>
+			<div class="id-actions">
+				<button type="button" data-action="copy18">Copy 18-character IDs</button>
+				<button type="button" data-action="copy15">Copy 15-character IDs</button>
+				<button type="button" data-action="copycsv">Copy as CSV</button>
+				<button type="button" data-action="example">Try an example</button>
+				<button type="button" data-action="clear">Clear</button>
+			</div>
+			<p class="id-summary" role="status" aria-live="polite" data-id-summary>Paste IDs above to convert them.</p>
+			<div class="table-wrap id-results" data-id-results hidden>
+				<table class="ref-table">
+					<thead>
+						<tr>
+							<th scope="col">Input</th>
+							<th scope="col">15-character</th>
+							<th scope="col">18-character</th>
+							<th scope="col">Object</th>
+							<th scope="col">Status</th>
+						</tr>
+					</thead>
+					<tbody data-id-out></tbody>
+				</table>
+			</div>
+		</div>
+	</section>
+
+	<section aria-labelledby="how-it-works" class="prose">
+		<h2 id="how-it-works">How the 15 to 18 character conversion works</h2>
+		<p>
+			Salesforce IDs use digits, lowercase letters and uppercase letters, and the 15-character form is case-sensitive:
+			<code>000000000000Abc</code> and <code>000000000000aBC</code> are different records. Case-insensitive tools such as
+			Excel treat them as the same, so the API returns an 18-character ID with a 3-character suffix that records the case
+			of the first 15 characters.
+		</p>
+		<ol>
+			<li>Split the 15 characters into three groups of five.</li>
+			<li>
+				For each group, build a number from five bits. A character at position 0, 1, 2, 3 or 4 adds 1, 2, 4, 8 or 16 if it
+				is an uppercase letter A to Z, and adds nothing otherwise.
+			</li>
+			<li>Turn each number (0 to 31) into one character: 0 to 25 become <code>A</code> to <code>Z</code>, and 26 to 31 become <code>0</code> to <code>5</code>.</li>
+			<li>Append the three characters to the original 15-character ID.</li>
+		</ol>
+		<p>
+			To go from 18 back to 15 characters, drop the last three. Salesforce also states that changing the case of an
+			18-character ID makes the suffix wrong, and Salesforce then returns an error.
+		</p>
+	</section>
+
+	<section aria-labelledby="examples">
+		<h2 id="examples">Worked examples</h2>
+		<p>These conversions are generated by the same code the converter uses. The two <code>Abc</code> IDs differ only by case, and so do their suffixes.</p>
+		<div class="table-wrap">
+			<table class="ref-table">
+				<thead>
+					<tr>
+						<th scope="col">15-character ID</th>
+						<th scope="col">Suffix</th>
+						<th scope="col">18-character ID</th>
+					</tr>
+				</thead>
+				<tbody>
+					{
+						examples.map((e) => (
+							<tr>
+								<td class="id-mono">{e.id15}</td>
+								<td class="id-mono">{e.suffix}</td>
+								<td class="id-mono">{e.id18}</td>
+							</tr>
+						))
+					}
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<section aria-labelledby="in-code" class="prose">
+		<h2 id="in-code">Get the 18-character ID in Apex and formulas</h2>
+		<pre class="tool-code"><code>// Apex: an Id converts to its 18-character form as a String
+Id accountId = '001D000000IqhSL';
+String id18 = String.valueOf(accountId);
+
+// Formula field (Text): 18-character version of a record ID
+CASESAFEID(Id)</code></pre>
+		<p>
+			SOQL accepts either form in a <code>WHERE Id =</code> filter, and the <code>Id</code> field in query results is always
+			the 18-character form. When you match IDs between Excel exports, a database or another tool, convert both sides to
+			18 characters first.
+		</p>
+	</section>
+
+	<section aria-labelledby="prefixes">
+		<h2 id="prefixes">Salesforce ID prefixes by object</h2>
+		<p>
+			The first three characters of a record ID, the key prefix, identify the object. This table lists common standard
+			objects. Prefixes are case-sensitive: <code>00e</code> is a Profile and <code>00E</code> is a User Role. Custom objects
+			get a prefix specific to your org, and a prefix is not guaranteed to be the same in every org, so confirm in yours:
+		</p>
+		<pre class="tool-code"><code>{PREFIX_META.howToCheck}
+// or in Apex:
+{PREFIX_META.apexCheck}</code></pre>
+		<div class="tool-filter" data-tf data-noun="prefixes">
+			<label for="prefix-q" class="sr-only">Filter prefixes</label>
+			<input id="prefix-q" type="search" placeholder="Filter prefixes: 001, account, user…" autocomplete="off" spellcheck="false" />
+			<p class="tool-filter-status" role="status" aria-live="polite" data-tf-status>{ID_PREFIXES.length} prefixes</p>
+		</div>
+		<div class="table-wrap" data-tf-section>
+			<table class="ref-table">
+				<thead>
+					<tr>
+						<th scope="col">Prefix</th>
+						<th scope="col">Object</th>
+						<th scope="col">API name</th>
+					</tr>
+				</thead>
+				<tbody>
+					{
+						ID_PREFIXES.map((p) => (
+							<tr id={`prefix-${p.prefix}`} data-tf-row>
+								<th scope="row"><code>{p.prefix}</code></th>
+								<td>{p.object}</td>
+								<td>{p.apiName ?? p.object}</td>
+							</tr>
+						))
+					}
+				</tbody>
+			</table>
+		</div>
+	</section>
+
+	<script>
+		import '../../scripts/id-converter';
+		import '../../scripts/table-filter';
+	</script>
+</ToolLayout>

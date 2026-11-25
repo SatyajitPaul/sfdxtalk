@@ -15,6 +15,10 @@ import {
 } from '../lib/hubs';
 import { categoryUrl } from '../lib/schema';
 import { abs } from '../lib/site';
+import { PROMPTS_INDEX_URL, getPrompts, promptUrl, promptsHubIndexable } from '../lib/prompts';
+import { SKILLS_INDEX_URL, getSkills, skillUrl, skillsHubIndexable } from '../lib/skills';
+import { toolLastmod } from '../lib/tool-exports';
+import { TOOLS_INDEX_URL, liveTools, toolUrl, toolsHubIndexable } from '../lib/tools';
 
 export const GET: APIRoute = async () => {
 	const docs = await getDocs();
@@ -24,6 +28,15 @@ export const GET: APIRoute = async () => {
 		{ path: '/', lastmod: all },
 		{ path: DOCS_INDEX_URL, lastmod: all },
 		...byCategory(docs).map((g) => ({ path: categoryUrl(g.category), lastmod: latestUpdate(g.docs) })),
+		// The tools hub is noindex until a tool is live, and noindex URLs stay out of the sitemap.
+		...(toolsHubIndexable() ? [{ path: TOOLS_INDEX_URL, lastmod: new Date(Math.max(...liveTools().map((t) => toolLastmod(t.slug)?.getTime() ?? 0))) }, ...liveTools().map((t) => ({ path: toolUrl(t), lastmod: toolLastmod(t.slug) }))] : []),
+		// Skills and prompts hubs are noindex until they list an item.
+		...(skillsHubIndexable()
+			? [{ path: SKILLS_INDEX_URL, lastmod: new Date(`${getSkills()[0].updated}T00:00:00Z`) }, ...getSkills().map((s) => ({ path: skillUrl(s), lastmod: new Date(`${s.updated}T00:00:00Z`) }))]
+			: []),
+		...(promptsHubIndexable()
+			? [{ path: PROMPTS_INDEX_URL, lastmod: new Date(`${getPrompts()[0].updated}T00:00:00Z`) }, ...getPrompts().map((p) => ({ path: promptUrl(p), lastmod: new Date(`${p.updated}T00:00:00Z`) }))]
+			: []),
 		{ path: RELEASES_INDEX_URL, lastmod: all },
 		...byRelease(docs).map((g) => ({ path: releaseUrl(g.release), lastmod: latestUpdate(g.docs) })),
 		// Thin tag pages are noindex, and a noindex URL must not be in the sitemap.

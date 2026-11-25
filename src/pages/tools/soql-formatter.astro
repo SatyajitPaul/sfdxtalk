@@ -1,0 +1,202 @@
+---
+// /tools/soql-formatter/ — SOQL formatter and conservative query checker. The
+// explanation, rule list and worked examples are static HTML, generated at build
+// time by the same functions the page script runs; the widget is a small client script.
+import '../../styles/tool-soql-formatter.css';
+import ToolLayout from '../../components/tools/ToolLayout.astro';
+import { SOQL_FORMATTER_META } from '../../data/tool-exports/soql-formatter';
+import { EXAMPLES, MANY_FIELDS_THRESHOLD, RULES, formatSoql, lintSoql } from '../../lib/tools/soql';
+
+const examples = EXAMPLES.map((e) => ({ ...e, formatted: formatSoql(e.query) }));
+const demoQuery = "SELECT Id, Name FROM Account WHERE Name LIKE '%corp' AND Type != 'Prospect' ORDER BY Name";
+const demoFindings = lintSoql(demoQuery);
+
+const faq = [
+	{
+		q: 'What does a SOQL formatter do?',
+		a: 'It rewrites a query so it is easy to read: keywords in uppercase, each clause such as FROM, WHERE and ORDER BY on its own line, fields and conditions listed one per line, and subqueries indented. It changes only whitespace and the case of keywords, so the query returns the same records.',
+	},
+	{
+		q: 'Does formatting change what my query returns?',
+		a: 'No. The formatter splits the query into tokens and prints the same tokens again with different spacing and keyword case. String literals, bind variables, date literals and field names are copied as you wrote them. SOQL keywords are not case-sensitive, so uppercasing them does not change the meaning.',
+	},
+	{
+		q: 'Can this tool tell me if my SOQL query is selective?',
+		a: 'No. Whether a filter is selective depends on how many records match in your org and on which fields are indexed, and a query on its own does not contain that information. The checker only flags patterns that commonly cause trouble, such as a leading wildcard or a negative operator, and labels them as heuristics.',
+	},
+	{
+		q: 'Why does the checker flag a leading wildcard or a negative operator?',
+		a: "A pattern such as LIKE '%abc' does not start with a fixed value, so an index generally cannot be used to find matches. Negative operators such as !=, NOT IN, NOT LIKE and EXCLUDES match everything except a few values, so they generally cannot narrow the data through an index either. In both cases the filter may be non-selective, so test the query against realistic data.",
+	},
+	{
+		q: 'Does the formatter handle subqueries, TYPEOF and bind variables?',
+		a: 'Yes. Parent-child subqueries in SELECT and semi-join subqueries in WHERE are indented as their own blocks, TYPEOF branches are indented under TYPEOF, and bind variables such as :accountIds, date literals such as LAST_N_DAYS:5 and quoted strings with escapes stay exactly as written.',
+	},
+	{
+		q: 'How many SOQL queries and records can an Apex transaction use?',
+		a: 'A synchronous Apex transaction can issue 100 SOQL queries and an asynchronous one 200, and a transaction can retrieve 50,000 records in total with SOQL. Each parent-child relationship subquery counts as an extra query. The governor limits reference on this site lists these and the other limits.',
+	},
+	{
+		q: 'Is my query sent to a server?',
+		a: 'No. Formatting and checking run in your browser, and the query you paste is not sent to SFDX Talk or anyone else.',
+	},
+];
+
+const tldr =
+	'Paste a SOQL query to get a readable, consistently formatted version that means exactly the same thing, plus hints about patterns that may be non-selective, such as a leading wildcard, a negative operator or a missing WHERE or LIMIT. The hints are heuristics: only your org\'s data and indexes decide real selectivity.';
+---
+
+<ToolLayout
+	slug="soql-formatter"
+	title="SOQL Formatter and Query Checker (Free, Online) | SFDX Talk"
+	h1="SOQL formatter and query checker"
+	description="Format SOQL queries with indented subqueries and one field per line, and check them for patterns that may be non-selective. Free, runs in your browser."
+	tldr={tldr}
+	faq={faq}
+	modified={new Date(`${SOQL_FORMATTER_META.verified}T00:00:00Z`)}
+	source={{
+		name: SOQL_FORMATTER_META.sourceName,
+		url: SOQL_FORMATTER_META.source,
+		release: SOQL_FORMATTER_META.release,
+		apiVersion: SOQL_FORMATTER_META.apiVersion,
+		verified: SOQL_FORMATTER_META.verified,
+	}}
+>
+	<section aria-labelledby="formatter" class="sq-tool" data-sq-tool>
+		<h2 id="formatter">Format and check a SOQL query</h2>
+		<p class="tool-nojs">The formatter needs JavaScript. The explanation, rules and worked examples below work without it.</p>
+		<div class="tool-js">
+			<label for="sq-input">Paste a SOQL query</label>
+			<textarea id="sq-input" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="select Id, Name from Account where Industry = 'Technology' limit 10"></textarea>
+			<div class="sq-opts">
+				<label>Layout
+					<select data-sq-layout>
+						<option value="expanded">One field per line</option>
+						<option value="compact">Compact</option>
+					</select>
+				</label>
+				<label>Keywords
+					<select data-sq-case>
+						<option value="upper">Uppercase</option>
+						<option value="keep">Keep as typed</option>
+					</select>
+				</label>
+				<label>Indent
+					<input type="number" min="1" max="8" value="2" data-sq-indent inputmode="numeric" />
+				</label>
+			</div>
+			<div class="sq-actions">
+				<button type="button" data-action="copy">Copy formatted query</button>
+				<button type="button" data-action="example">Try an example</button>
+				<button type="button" data-action="clear">Clear</button>
+			</div>
+			<h3 class="sq-h">Formatted query</h3>
+			<pre class="tool-code sq-out" data-sq-out tabindex="0">The formatted query appears here.</pre>
+			<h3 class="sq-h">Checker hints</h3>
+			<p class="sq-summary" role="status" aria-live="polite" data-sq-summary>Paste a SOQL query to format and check it.</p>
+			<ul class="sq-findings" data-sq-findings></ul>
+		</div>
+	</section>
+
+	<section aria-labelledby="conventions" class="prose">
+		<h2 id="conventions">How SOQL formatting conventions work</h2>
+		<p>
+			SOQL ignores line breaks and extra spaces, so formatting is purely for people. The most common convention, and the
+			one this tool applies, is simple: write keywords in uppercase, start each clause (<code>SELECT</code>,
+			<code>FROM</code>, <code>WHERE</code>, <code>GROUP BY</code>, <code>HAVING</code>, <code>ORDER BY</code>,
+			<code>LIMIT</code>, <code>OFFSET</code>) on its own line, and indent anything that belongs to a clause.
+		</p>
+		<ul>
+			<li><strong>Fields:</strong> one per line makes diffs in version control show exactly which field was added. The compact layout keeps them on one line.</li>
+			<li><strong>Conditions:</strong> each top-level <code>AND</code> or <code>OR</code> starts a new line, so a long filter reads like a list. Parenthesised groups stay together.</li>
+			<li><strong>Subqueries:</strong> a parent-child subquery in <code>SELECT</code> or a semi-join in <code>WHERE</code> is indented as its own query inside parentheses. <code>TYPEOF</code> branches are indented under <code>TYPEOF</code>.</li>
+			<li><strong>Things that must not change:</strong> string literals (including escaped quotes), bind variables such as <code>:ids</code>, date and datetime literals, and literals such as <code>LAST_N_DAYS:5</code> are copied exactly. Field and object names keep the case you typed.</li>
+		</ul>
+		<p>
+			The formatter is token based rather than a find-and-replace on keywords, so a word inside a string, or an object
+			named <code>Order</code>, is never mistaken for a keyword. It also never reorders, adds or removes tokens. If you
+			paste something that is not a valid query, it still prints the tokens it found, so check the result before you run it.
+		</p>
+	</section>
+
+	<section aria-labelledby="rules" class="prose">
+		<h2 id="rules">What the query checker looks for</h2>
+		<p>
+			The checker reads only the text of the query. It flags patterns where the query alone is enough to say that the
+			query <em>may</em> be slow or non-selective. It cannot see how many records match or which fields are indexed in
+			your org, so every finding is a heuristic to investigate, not a verdict. Most of the cost of a query shows up
+			against the limits in the <a href="/tools/governor-limits/">governor limits reference</a>.
+		</p>
+		<ul class="sq-rules">
+			{
+				RULES.map((r) => (
+					<li id={`rule-${r.id}`}>
+						<strong>{r.rule}</strong> <span class="sq-badge">{r.severity}</span>
+						<p>
+							<em>Flags:</em> {r.flags} {r.why} <a href={r.href}>{r.hrefLabel}</a>
+						</p>
+					</li>
+				))
+			}
+		</ul>
+		<p>
+			Rules the checker deliberately skips: a function applied to a filtered field, formula fields, and the number of
+			matching records, because none of those can be proven from the query text. Filters on indexed fields with selective
+			values are fine, and a query flagged here can still be the right query. The {MANY_FIELDS_THRESHOLD}-field
+			threshold is our own rule of thumb, not a Salesforce limit.
+		</p>
+	</section>
+
+	<section aria-labelledby="examples">
+		<h2 id="examples">Worked examples</h2>
+		<p>Each result below is generated at build time by the same formatter the tool runs, with the default options.</p>
+		{
+			examples.map((e) => (
+				<div class="sq-example">
+					<h3>{e.title}</h3>
+					<p>{e.note}</p>
+					<div class="sq-pair">
+						<div>
+							<p class="sq-label">Before</p>
+							<pre class="tool-code"><code>{e.query}</code></pre>
+						</div>
+						<div>
+							<p class="sq-label">After</p>
+							<pre class="tool-code"><code>{e.formatted}</code></pre>
+						</div>
+					</div>
+				</div>
+			))
+		}
+		<div class="sq-example">
+			<h3>A query the checker has hints for</h3>
+			<pre class="tool-code"><code>{demoQuery}</code></pre>
+			<ul class="sq-findings">
+				{
+					demoFindings.map((f) => (
+						<li class={`sq-finding sq-finding-${f.severity}`}>
+							<strong>{f.rule}</strong>
+							<span class="sq-badge">{f.severity} · matched: {f.match}</span>
+							<p>{f.reason} <a href={f.href}>Related limit</a></p>
+						</li>
+					))
+				}
+			</ul>
+		</div>
+	</section>
+
+	<section aria-labelledby="next" class="prose">
+		<h2 id="next">Where to go next</h2>
+		<p>
+			A tidy query is easier to review, but the limits decide whether it runs. See the
+			<a href="/tools/governor-limits/#soql-queries">SOQL query count limit</a>, the
+			<a href="/tools/governor-limits/#soql-rows">records retrieved limit</a> and the
+			<a href="/tools/governor-limits/#heap-size">heap size limit</a>, or use the
+			<a href="/tools/governor-limits/">full governor limits reference</a>.
+		</p>
+	</section>
+
+	<script>
+		import '../../scripts/soql-formatter';
+	</script>
+</ToolLayout>

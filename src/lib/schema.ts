@@ -155,6 +155,217 @@ export function collectionGraph(p: PageInput, docs: Doc[]) {
 	);
 }
 
+/** Tools hub: CollectionPage listing only live tools, plus the visible FAQ as FAQPage. */
+export function toolsHubGraph(
+	p: PageInput,
+	tools: { name: string; tagline: string; path: string }[],
+	faq: { q: string; a: string }[],
+) {
+	const url = abs(p.path);
+	const pageId = `${url}#webpage`;
+	return graph(
+		organization(),
+		website(),
+		{
+			...webPage({ ...p, type: 'CollectionPage' }),
+			...(tools.length
+				? {
+						mainEntity: {
+							'@type': 'ItemList',
+							numberOfItems: tools.length,
+							itemListElement: tools.map((t, i) => ({
+								'@type': 'ListItem',
+								position: i + 1,
+								url: abs(t.path),
+								name: t.name,
+							})),
+						},
+					}
+				: {}),
+		},
+		...(p.crumbs?.length ? [breadcrumbList(url, p.crumbs)] : []),
+		{
+			'@type': 'FAQPage',
+			'@id': `${url}#faq`,
+			url: `${url}#faq`,
+			name: `${p.title}: frequently asked questions`,
+			inLanguage: SITE.language,
+			isPartOf: ref(pageId),
+			mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+		},
+	);
+}
+
+interface ToolInput {
+	path: string;
+	/** Page <title>. */
+	title: string;
+	/** Tool name, shown as the WebApplication name. */
+	name: string;
+	description: string;
+	tldr: string;
+	crumbs: Crumb[];
+	faq: { q: string; a: string }[];
+	modified: Date;
+	/** Official pages the tool's data was checked against. */
+	citations: string[];
+}
+
+/**
+ * Tool page: WebApplication (free, runs in the browser) + FAQPage + BreadcrumbList.
+ * Only states what the page shows: no ratings, no price claims beyond "free".
+ */
+export function toolGraph(t: ToolInput) {
+	const url = abs(t.path);
+	const pageId = `${url}#webpage`;
+	const appId = `${url}#app`;
+	return graph(
+		organization(),
+		website(),
+		{
+			...webPage({ path: t.path, title: t.title, description: t.description, crumbs: t.crumbs, modified: t.modified }),
+			mainEntity: ref(appId),
+			speakable: { '@type': 'SpeakableSpecification', cssSelector: ['.tldr'] },
+		},
+		breadcrumbList(url, t.crumbs),
+		{
+			'@type': 'WebApplication',
+			'@id': appId,
+			name: t.name,
+			url,
+			description: t.description,
+			abstract: t.tldr,
+			applicationCategory: 'DeveloperApplication',
+			applicationSubCategory: 'Salesforce developer tool',
+			operatingSystem: 'Any (runs in a web browser)',
+			browserRequirements: 'Requires JavaScript for interactive features. The reference content is readable without it.',
+			isAccessibleForFree: true,
+			offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+			inLanguage: SITE.language,
+			isPartOf: ref(WEBSITE_ID),
+			publisher: ref(ORG_ID),
+			dateModified: t.modified.toISOString(),
+			license: SITE.contentLicense.url,
+			citation: t.citations.map((href) => ({ '@type': 'WebPage', url: href })),
+		},
+		{
+			'@type': 'FAQPage',
+			'@id': `${url}#faq`,
+			url: `${url}#faq`,
+			name: `${t.name}: frequently asked questions`,
+			inLanguage: SITE.language,
+			isPartOf: ref(pageId),
+			mainEntity: t.faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+		},
+	);
+}
+
+const MIT_URL = 'https://opensource.org/license/mit';
+
+interface LibraryItemInput {
+	path: string;
+	title: string;
+	/** Item name (skill or prompt title). */
+	name: string;
+	description: string;
+	/** Answer-first summary, also the speakable text. */
+	summary: string;
+	crumbs: Crumb[];
+	faq: { q: string; a: string }[];
+	published: Date;
+	modified: Date;
+	keywords: string[];
+	/** Human label of the item's category. */
+	section: string;
+	/** Official pages the content was checked against. */
+	citations: string[];
+}
+
+function libraryArticle(i: LibraryItemInput, license: string): Node {
+	const url = abs(i.path);
+	return {
+		'@type': 'TechArticle',
+		'@id': `${url}#article`,
+		headline: i.name,
+		name: i.name,
+		description: i.description,
+		abstract: i.summary,
+		url,
+		mainEntityOfPage: ref(`${url}#webpage`),
+		isPartOf: ref(WEBSITE_ID),
+		datePublished: i.published.toISOString(),
+		dateModified: i.modified.toISOString(),
+		author: ref(ORG_ID),
+		publisher: ref(ORG_ID),
+		image: shareImage(),
+		inLanguage: SITE.language,
+		articleSection: i.section,
+		keywords: i.keywords.join(', '),
+		isAccessibleForFree: true,
+		license,
+		citation: i.citations.map((href) => ({ '@type': 'WebPage', url: href })),
+		speakable: { '@type': 'SpeakableSpecification', cssSelector: ['.tldr'] },
+	};
+}
+
+function libraryFaq(i: LibraryItemInput): Node {
+	const url = abs(i.path);
+	return {
+		'@type': 'FAQPage',
+		'@id': `${url}#faq`,
+		url: `${url}#faq`,
+		name: `${i.name}: frequently asked questions`,
+		inLanguage: SITE.language,
+		isPartOf: ref(`${url}#webpage`),
+		mainEntity: i.faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+	};
+}
+
+/** Skill page: WebPage + TechArticle + SoftwareSourceCode (the downloadable skill) + FAQPage + BreadcrumbList. */
+export function skillGraph(i: LibraryItemInput & { version: string; zipPath: string; rawPath: string }) {
+	const url = abs(i.path);
+	return graph(
+		organization(),
+		website(),
+		{ ...webPage({ path: i.path, title: i.title, description: i.description, crumbs: i.crumbs, published: i.published, modified: i.modified }), mainEntity: ref(`${url}#article`) },
+		breadcrumbList(url, i.crumbs),
+		libraryArticle(i, MIT_URL),
+		{
+			'@type': 'SoftwareSourceCode',
+			'@id': `${url}#skill`,
+			name: i.name,
+			description: i.description,
+			programmingLanguage: 'Markdown',
+			codeSampleType: 'full solution',
+			version: i.version,
+			license: MIT_URL,
+			url,
+			isPartOf: ref(WEBSITE_ID),
+			publisher: ref(ORG_ID),
+			dateModified: i.modified.toISOString(),
+			targetProduct: { '@type': 'SoftwareApplication', name: 'Salesforce Platform', applicationCategory: 'DeveloperApplication' },
+			encoding: [
+				{ '@type': 'MediaObject', contentUrl: abs(i.zipPath), encodingFormat: 'application/zip' },
+				{ '@type': 'MediaObject', contentUrl: abs(i.rawPath), encodingFormat: 'text/markdown' },
+			],
+		},
+		libraryFaq(i),
+	);
+}
+
+/** Prompt page: WebPage + TechArticle + FAQPage + BreadcrumbList. */
+export function promptGraph(i: LibraryItemInput) {
+	const url = abs(i.path);
+	return graph(
+		organization(),
+		website(),
+		{ ...webPage({ path: i.path, title: i.title, description: i.description, crumbs: i.crumbs, published: i.published, modified: i.modified }), mainEntity: ref(`${url}#article`) },
+		breadcrumbList(url, i.crumbs),
+		libraryArticle(i, SITE.contentLicense.url),
+		libraryFaq(i),
+	);
+}
+
 /** Breadcrumb trail for an article: Home › Category › Article. */
 export function docCrumbs(doc: Doc): Crumb[] {
 	return [

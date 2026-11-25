@@ -1,0 +1,75 @@
+/* Tool pages (/tools/{slug}/). Tokens come from global.css. */
+.tool-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin: 0; color: var(--text-muted); font-size: var(--step--1); }
+.tool-page section > h2 { margin-top: var(--space-6); }
+.tool-page section > p { margin-top: var(--space-2); }
+.tool-disclaimer { color: var(--text-muted); font-size: var(--step--1); }
+
+/* Filter box: hidden unless JS is available (the tables work without it). */
+.tool-filter { display: none; }
+.js .tool-filter { display: block; }
+.tool-filter input {
+	width: 100%;
+	padding: var(--space-3) var(--space-4);
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+}
+.tool-filter input:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.tool-filter-status { margin: var(--space-2) 0 0; color: var(--text-muted); font-size: var(--step--1); }
+
+/* Reference tables */
+.ref-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; line-height: 1.5; }
+.ref-table th, .ref-table td { padding: var(--space-2) var(--space-3); text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.ref-table th { background: var(--surface); color: var(--text-strong); font-weight: 600; }
+.ref-table tbody tr:last-child td { border-bottom: 0; }
+.ref-table tr:target td, .ref-table tr:target th { background: color-mix(in srgb, var(--release) 14%, transparent); }
+.ref-name { min-width: 14rem; }
+.ref-name a.anchor { margin-left: var(--space-1); color: var(--text-muted); text-decoration: none; opacity: 0; }
+.ref-table tr:hover .anchor, .ref-name a.anchor:focus-visible { opacity: 1; }
+.ref-note { display: block; margin-top: var(--space-1); color: var(--text-muted); font-size: var(--step--1); }
+.ref-method { display: block; margin-top: var(--space-1); font-size: var(--step--1); }
+.ref-value { white-space: normal; min-width: 7rem; }
+.ref-section[hidden], .ref-table tr[hidden] { display: none; }
+.tool-code { margin: var(--space-3) 0 0; padding: var(--space-3) var(--space-4); overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-size: 0.85rem; line-height: 1.55; }
+.tool-code code { background: none; padding: 0; }
+.tool-filter .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Salesforce ID converter */
+.tool-js { display: none; }
+.js .tool-js { display: block; }
+.id-tool label { display: block; margin-bottom: var(--space-2); font-weight: 600; }
+.id-tool textarea {
+	width: 100%;
+	min-height: 8rem;
+	padding: var(--space-3) var(--space-4);
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+	font: 0.9rem/1.5 var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+	resize: vertical;
+}
+.id-tool textarea:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.id-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.id-actions button {
+	padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+	font-size: var(--step--1);
+	cursor: pointer;
+}
+.id-actions button:hover { border-color: var(--link); }
+.id-actions button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.id-summary { margin: var(--space-3) 0 0; color: var(--text-muted); font-size: var(--step--1); }
+.id-results { margin-top: var(--space-3); }
+.id-results[hidden] { display: none; }
+.id-mono { font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 0.85rem; word-break: break-all; }
+.id-status-ok { color: var(--tip, inherit); }
+.id-status-invalid, .id-status-checksum-mismatch { color: var(--warning, inherit); }
+.tool-nojs { padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-size: var(--step--1); }
+.js .tool-nojs { display: none; }

@@ -1,0 +1,200 @@
+---
+// /prompt/{slug}/ — one prompt: what it does, the prompt, a fill-in form, a worked example,
+// the known-good output, a verification checklist, caveats and how it was tested.
+import '../../styles/tools.css';
+import '../../styles/library.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { resolveRelated } from '../../lib/library-related';
+import { PROMPTS_INDEX_URL, PROMPT_CATEGORIES, examplePrompt, getPrompts, promptUrl } from '../../lib/prompts';
+import { promptGraph, type Crumb } from '../../lib/schema';
+import { SITE } from '../../lib/site';
+
+export function getStaticPaths() {
+	return getPrompts().map((prompt) => ({ params: { slug: prompt.slug }, props: { prompt } }));
+}
+const { prompt } = Astro.props;
+const path = promptUrl(prompt);
+const title = `${prompt.title}: Tested Salesforce Prompt | SFDX Talk`;
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Prompts', path: PROMPTS_INDEX_URL },
+	{ name: prompt.title, path },
+];
+const related = await resolveRelated(prompt.related, `src/prompts/${prompt.slug}.ts`);
+const relatedGroups = [
+	{ id: 'rel-skills', label: 'Related skills', links: related.skills },
+	{ id: 'rel-prompts', label: 'Related prompts', links: related.prompts },
+	{ id: 'rel-tools', label: 'Related tools', links: related.tools },
+	{ id: 'rel-docs', label: 'Related guides', links: related.docs },
+].filter((g) => g.links.length > 0);
+const worked = examplePrompt(prompt);
+---
+
+<BaseLayout
+	title={title}
+	description={prompt.description}
+	jsonLd={promptGraph({
+		path,
+		title,
+		name: prompt.title,
+		description: prompt.description,
+		summary: prompt.summary,
+		crumbs,
+		faq: prompt.faq,
+		published: new Date(`${prompt.published}T00:00:00Z`),
+		modified: new Date(`${prompt.updated}T00:00:00Z`),
+		keywords: prompt.tags,
+		section: PROMPT_CATEGORIES[prompt.category],
+		citations: prompt.refs,
+	})}
+	markdownPath={`/prompt/${prompt.slug}.md`}
+>
+	<div class="page-narrow lib-page">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>{prompt.title}</h1>
+		<p class="tool-meta">
+			<span class="badge badge-release">{PROMPT_CATEGORIES[prompt.category]}</span>
+			<span>Tested with {prompt.tested.model} on <time datetime={prompt.tested.date}>{prompt.tested.date}</time></span>
+			<span>Updated <time datetime={prompt.updated}>{prompt.updated}</time></span>
+		</p>
+		<div class="tldr">
+			<p class="tldr-label">Quick answer</p>
+			<p>{prompt.summary}</p>
+		</div>
+
+		<section aria-labelledby="use-when">
+			<h2 id="use-when">When to use this prompt</h2>
+			<ul>{prompt.useWhen.map((u) => <li>{u}</li>)}</ul>
+		</section>
+
+		<section aria-labelledby="the-prompt" data-pf data-template={prompt.prompt} data-examples={JSON.stringify(Object.fromEntries(prompt.variables.map((v) => [v.name, v.example])))}>
+			<h2 id="the-prompt">The prompt</h2>
+			<p>Replace each <code>{'{{placeholder}}'}</code> with your own details, or use the form below to fill them in and copy the result.</p>
+			<pre class="lib-code" data-pf-template><code>{prompt.prompt}</code></pre>
+			<div class="lib-actions tool-js">
+				<button type="button" data-pf-copy-template>Copy prompt template</button>
+			</div>
+
+			<h3>Placeholders</h3>
+			<div class="table-wrap">
+				<table class="lib-vars">
+					<thead>
+						<tr><th scope="col">Placeholder</th><th scope="col">What to put there</th></tr>
+					</thead>
+					<tbody>
+						{prompt.variables.map((v) => (
+							<tr>
+								<th scope="row"><code>{`{{${v.name}}}`}</code></th>
+								<td>{v.label}{v.help ? `. ${v.help}` : ''}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+
+			<div class="tool-js lib-fill">
+				<h3>Fill it in</h3>
+				{prompt.variables.map((v) => (
+					<>
+						<label for={`pf-${v.name}`}>{v.label}</label>
+						{v.multiline ? (
+							<textarea id={`pf-${v.name}`} data-var={v.name} spellcheck="false" autocomplete="off" placeholder={v.example.split('\n')[0].slice(0, 80)}></textarea>
+						) : (
+							<input id={`pf-${v.name}`} data-var={v.name} type="text" spellcheck="false" autocomplete="off" placeholder={v.example} />
+						)}
+						{v.help && <p class="lib-help">{v.help}</p>}
+					</>
+				))}
+				<p class="lib-code-label">Your prompt</p>
+				<pre class="lib-code" data-pf-out aria-live="polite"><code></code></pre>
+				<div class="lib-actions">
+					<button type="button" data-pf-copy>Copy your prompt</button>
+					<button type="button" data-pf-example>Use the example values</button>
+				</div>
+				<p class="lib-note">Everything you type stays in your browser.</p>
+			</div>
+			<p class="tool-nojs">The fill-in form needs JavaScript. The prompt template above works without it.</p>
+		</section>
+
+		<section aria-labelledby="example">
+			<h2 id="example">Worked example</h2>
+			<p>This is the prompt with the example values filled in:</p>
+			<pre class="lib-code"><code>{worked}</code></pre>
+			{prompt.inputNote && <p class="lib-note">{prompt.inputNote}</p>}
+			<p class="lib-code-label">Known-good output ({prompt.output.language})</p>
+			<pre class="lib-code"><code>{prompt.output.body}</code></pre>
+		</section>
+
+		<section aria-labelledby="checklist">
+			<h2 id="checklist">Check the output before you use it</h2>
+			<ul>{prompt.checklist.map((c) => <li>{c}</li>)}</ul>
+		</section>
+
+		<section aria-labelledby="caveats">
+			<h2 id="caveats">Caveats</h2>
+			<ul>{prompt.caveats.map((c) => <li>{c}</li>)}</ul>
+		</section>
+
+		{
+			prompt.tips && prompt.tips.length > 0 && (
+				<section aria-labelledby="tips">
+					<h2 id="tips">Adapting the prompt</h2>
+					<ul>{prompt.tips.map((c) => <li>{c}</li>)}</ul>
+				</section>
+			)
+		}
+
+		<section aria-labelledby="tested">
+			<h2 id="tested">How we tested it</h2>
+			<div class="lib-box">
+				<p><strong>Model:</strong> {prompt.tested.model}</p>
+				<p><strong>Date:</strong> {prompt.tested.date}</p>
+				<p><strong>What we did:</strong> {prompt.tested.method}</p>
+				<p><strong>What we did not verify:</strong> {prompt.tested.notVerified}</p>
+			</div>
+		</section>
+
+		<section class="prose" aria-labelledby="prompt-faq">
+			<h2 id="prompt-faq">Frequently asked questions</h2>
+			{
+				prompt.faq.map((f) => (
+					<>
+						<h3>{f.q}</h3>
+						<p>{f.a}</p>
+					</>
+				))
+			}
+		</section>
+
+		{
+			relatedGroups.map((g) => (
+				<section aria-labelledby={g.id}>
+					<h2 id={g.id}>{g.label}</h2>
+					<ul class="related-list">
+						{g.links.map((l) => (
+							<li>
+								<a href={l.href}>{l.title}</a>
+								<p>{l.text}</p>
+							</li>
+						))}
+					</ul>
+				</section>
+			))
+		}
+
+		<section aria-labelledby="prompt-sources">
+			<h2 id="prompt-sources">Official sources</h2>
+			<ul>{prompt.refs.map((r) => <li><a href={r} rel="noopener">{r}</a></li>)}</ul>
+		</section>
+
+		<p class="lib-note">
+			{SITE.disclaimer} Prompts are shared under CC BY 4.0. AI output can be wrong: review it and test it in a sandbox before you deploy.
+			<a href={PROMPTS_INDEX_URL}>All prompts</a>
+		</p>
+	</div>
+
+	<script>
+		import '../../scripts/prompt-fill';
+	</script>
+</BaseLayout>

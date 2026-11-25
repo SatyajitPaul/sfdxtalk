@@ -1,0 +1,116 @@
+---
+/**
+ * Shared shell for every /tools/{slug}/ page, so each tool meets the same SEO
+ * and GEO contract (docs/TOOLS-PLAN.md §10): one H1, a "Quick answer" block,
+ * visible source and verification line, FAQ mirrored as FAQPage JSON-LD,
+ * related guides and tools, and WebApplication structured data.
+ */
+import '../../styles/tools.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../Breadcrumbs.astro';
+import { docUrl, getDocs } from '../../lib/docs';
+import { toolGraph, type Crumb } from '../../lib/schema';
+import { TOOLS, TOOLS_INDEX_URL, liveTools, toolUrl } from '../../lib/tools';
+import { CATEGORIES } from '../../lib/taxonomy';
+import { SITE } from '../../lib/site';
+
+interface Props {
+	slug: string;
+	/** <title>; include the primary query and the brand. */
+	title: string;
+	h1: string;
+	description: string;
+	tldr: string;
+	faq: { q: string; a: string }[];
+	modified: Date;
+	/** Where the data comes from, shown under the title. */
+	source: { name: string; url: string; release: string; apiVersion: string; verified: string };
+}
+
+const { slug, title, h1, description, tldr, faq, modified, source } = Astro.props;
+const tool = TOOLS.find((t) => t.slug === slug)!;
+const path = toolUrl(tool);
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Tools', path: TOOLS_INDEX_URL },
+	{ name: tool.name, path },
+];
+
+const docs = await getDocs();
+const related = docs.filter((d) => tool.relatedCategories.includes(d.data.category)).slice(0, 4);
+const others = liveTools().filter((t) => t.slug !== slug);
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	jsonLd={toolGraph({ path, title, name: tool.name, description, tldr, crumbs, faq, modified, citations: [source.url] })}
+	markdownPath={`/tools/${slug}.md`}
+>
+	<div class="page-narrow tool-page">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>{h1}</h1>
+		<p class="tool-meta">
+			<span class="badge badge-release">{source.release}</span>
+			<span class="badge">API {source.apiVersion}</span>
+			<span>Checked against the official docs on <time datetime={source.verified}>{source.verified}</time></span>
+			<span>Source: <a href={source.url} rel="noopener">{source.name}</a></span>
+		</p>
+		<div class="tldr">
+			<p class="tldr-label">Quick answer</p>
+			<p>{tldr}</p>
+		</div>
+
+		<slot />
+
+		<section class="prose" aria-labelledby="tool-faq">
+			<h2 id="tool-faq">Frequently asked questions</h2>
+			{
+				faq.map((f) => (
+					<>
+						<h3>{f.q}</h3>
+						<p>{f.a}</p>
+					</>
+				))
+			}
+		</section>
+
+		{
+			related.length > 0 && (
+				<section aria-labelledby="tool-related">
+					<h2 id="tool-related">Related guides</h2>
+					<ul class="related-list">
+						{related.map((r) => (
+							<li>
+								<a href={docUrl(r)}>{r.data.title}</a>
+								<p>{CATEGORIES[r.data.category].label}: {r.data.description}</p>
+							</li>
+						))}
+					</ul>
+				</section>
+			)
+		}
+
+		{
+			others.length > 0 && (
+				<section aria-labelledby="tool-others">
+					<h2 id="tool-others">More tools</h2>
+					<ul class="related-list">
+						{others.map((t) => (
+							<li>
+								<a href={toolUrl(t)}>{t.name}</a>
+								<p>{t.tagline}</p>
+							</li>
+						))}
+						<li><a href={TOOLS_INDEX_URL}>All SFDX Talk tools</a></li>
+					</ul>
+				</section>
+			)
+		}
+
+		<p class="tool-disclaimer">
+			{SITE.disclaimer} Salesforce changes its platform every release, so confirm against the
+			<a href={source.url} rel="noopener">official page</a> before relying on a value.
+		</p>
+	</div>
+</BaseLayout>

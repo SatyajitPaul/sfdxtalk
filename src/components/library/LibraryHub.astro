@@ -1,0 +1,92 @@
+---
+/**
+ * Hub shell for /skills/ and /prompt/: answer-first intro, grouped cards, explainer
+ * slot, FAQ (mirrored as FAQPage JSON-LD) and breadcrumbs. Noindex until it lists an item.
+ */
+import '../../styles/tools.css';
+import '../../styles/library.css';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../Breadcrumbs.astro';
+import { toolsHubGraph, type Crumb } from '../../lib/schema';
+
+interface Item {
+	title: string;
+	tagline: string;
+	href: string;
+	meta: string;
+	path: string;
+}
+interface Group {
+	id: string;
+	label: string;
+	items: Item[];
+}
+interface Props {
+	path: string;
+	crumbName: string;
+	title: string;
+	h1: string;
+	description: string;
+	lead: string;
+	promises: string[];
+	groups: Group[];
+	faq: { q: string; a: string }[];
+	count: number;
+}
+
+const { path, crumbName, title, h1, description, lead, promises, groups, faq, count } = Astro.props;
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: crumbName, path },
+];
+const all = groups.flatMap((g) => g.items);
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	noindex={count === 0}
+	jsonLd={toolsHubGraph({ path, title, description, crumbs }, all.map((i) => ({ name: i.title, tagline: i.tagline, path: i.path })), faq)}
+>
+	<div class="page-narrow lib-hub">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>{h1}</h1>
+		<p class="tools-lead">{lead}</p>
+		<ul class="lib-promises" aria-label="What to expect">
+			{promises.map((p) => <li set:html={p} />)}
+		</ul>
+
+		{
+			groups.map((g) => (
+				<section aria-labelledby={`g-${g.id}`}>
+					<h2 id={`g-${g.id}`}>{g.label}</h2>
+					<ul class="lib-grid">
+						{g.items.map((i) => (
+							<li class="lib-card">
+								<a href={i.href}>
+									<span class="lib-card-title">{i.title}</span>
+									<span class="lib-card-text">{i.tagline}</span>
+									<span class="lib-card-meta">{i.meta}</span>
+								</a>
+							</li>
+						))}
+					</ul>
+				</section>
+			))
+		}
+
+		<slot />
+
+		<section class="prose" aria-labelledby="hub-faq">
+			<h2 id="hub-faq">Frequently asked questions</h2>
+			{
+				faq.map((f) => (
+					<>
+						<h3>{f.q}</h3>
+						<p>{f.a}</p>
+					</>
+				))
+			}
+		</section>
+	</div>
+</BaseLayout>

@@ -1,0 +1,270 @@
+---
+// /tools/async-apex-chooser/: decision wizard for async Apex. All reference content
+// (comparison table, guidance, code, mistakes) is static HTML with limits read from
+// src/data/governor-limits.ts; the wizard is a small client script on top.
+import '../../styles/tool-async-apex-chooser.css';
+import ToolLayout from '../../components/tools/ToolLayout.astro';
+import { ASYNC_CHOOSER_META, comparisonRows } from '../../data/tool-exports/async-apex-chooser';
+import { SCENARIOS, limit, eventTriggerBatch, scenarioTop } from '../../lib/tools/async-chooser';
+
+const rows = comparisonRows();
+const scenarios = SCENARIOS.map((s) => ({ label: s.label, top: scenarioTop(s) }));
+const guide = 'https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode';
+const refs = [
+	['Asynchronous Apex', `${guide}/apex_async_overview.htm`],
+	['Future methods', `${guide}/apex_invoking_future_methods.htm`],
+	['Queueable Apex', `${guide}/apex_queueing_jobs.htm`],
+	['Batch Apex', `${guide}/apex_batch_interface.htm`],
+	['Apex scheduler', `${guide}/apex_scheduler.htm`],
+];
+
+const faq = [
+	{
+		q: 'What is the difference between future and Queueable Apex?',
+		a: 'A future method must be static, return void and take only primitive parameters or collections of primitives. A Queueable class can hold sObjects and custom Apex types as member variables, returns a job ID from System.enqueueJob, and can start another Queueable job. Salesforce recommends Queueable Apex over future methods for new work.',
+	},
+	{
+		q: 'Can I make a callout from a trigger?',
+		a: 'Not directly in the trigger transaction. Move the callout into asynchronous Apex: a future method with @future(callout=true), or a Queueable or Batch class that implements Database.AllowsCallouts, and start it from the trigger or its handler.',
+	},
+	{
+		q: 'What is the default batch size in Batch Apex?',
+		a: 'If you do not pass a scope to Database.executeBatch, Salesforce splits the records from the start method into batches of 200. You can pass a different scope as the second parameter, for example Database.executeBatch(new MyBatch(), 100). Governor limits reset for each execute call.',
+	},
+	{
+		q: 'How many Queueable jobs can I chain or enqueue?',
+		a: `In synchronous Apex you can add up to ${limit('queueable-jobs')} jobs with System.enqueueJob in one transaction. From an asynchronous job, such as a running Queueable, you can add ${limit('queueable-jobs', 'async')}, so a chain is one job starting the next.`,
+	},
+	{
+		q: 'Can I call a future method from a batch or another future method?',
+		a: `No. The governor limit for future calls is ${limit('future-calls', 'async')}. From a Queueable context you can call future methods, but a Queueable is usually the simpler choice there.`,
+	},
+	{
+		q: 'When should I use platform events instead of Queueable Apex?',
+		a: `Use platform events or Change Data Capture when publishers and subscribers should be decoupled, for example when several consumers react to the same change. An Apex trigger on the event receives batches of up to ${eventTriggerBatch()} events. For a single follow-up step in your own code, Queueable Apex is usually simpler.`,
+	},
+	{
+		q: 'Do future, Queueable, Batch and scheduled Apex share a limit?',
+		a: 'Yes. They all count toward the org-wide asynchronous Apex method executions per 24-hour period, which is 250,000 or the number of applicable user licenses multiplied by 200, whichever is greater. For Batch Apex, start, execute and finish each count.',
+	},
+];
+
+const tldr =
+	'Use Queueable Apex for most new background work: it takes sObjects, returns a job ID and can chain. Use Batch Apex for large data sets, Schedulable Apex to run on a schedule, a future method only for small primitive-parameter jobs (Salesforce recommends Queueable instead), and platform events or Change Data Capture triggers for decoupled, event-driven processing. Answer the questions below for a ranked recommendation.';
+
+const futureCode = `public class AccountSync {
+    @future(callout=true)
+    public static void send(Set<Id> accountIds) {
+        // Primitives only: query the records inside the method
+        List<Account> accounts = [SELECT Id, Name FROM Account WHERE Id IN :accountIds];
+        // ... make the HTTP callout ...
+    }
+}
+// Caller: AccountSync.send(new Set<Id>{ acc.Id });`;
+const queueableCode = `public class SyncJob implements Queueable, Database.AllowsCallouts {
+    private List<Account> accounts;
+    public SyncJob(List<Account> accounts) { this.accounts = accounts; }
+
+    public void execute(QueueableContext ctx) {
+        // ... callout or DML ...
+        // Optional: run follow-up logic however this job ends
+        System.attachFinalizer(new SyncFinalizer());
+        // Chain the next step (one job allowed from async Apex)
+        // System.enqueueJob(new NextStepJob());
+    }
+}
+public class SyncFinalizer implements Finalizer {
+    public void execute(FinalizerContext ctx) {
+        if (ctx.getResult() == ParentJobResult.UNHANDLED_EXCEPTION) {
+            // log ctx.getException()
+        }
+    }
+}
+// Caller:
+Id jobId = System.enqueueJob(new SyncJob(accounts));`;
+const batchCode = `public class ArchiveBatch implements Database.Batchable<SObject> {
+    public Database.QueryLocator start(Database.BatchableContext bc) {
+        return Database.getQueryLocator('SELECT Id FROM Case WHERE IsClosed = true');
+    }
+    public void execute(Database.BatchableContext bc, List<Case> scope) {
+        // process one chunk; limits reset for each execute call
+    }
+    public void finish(Database.BatchableContext bc) {
+        // post-processing, or start another job
+    }
+}
+// Caller (scope of 200 is the default):
+Id jobId = Database.executeBatch(new ArchiveBatch(), 200);`;
+const schedCode = `public class NightlyJob implements Schedulable {
+    public void execute(SchedulableContext sc) {
+        Database.executeBatch(new ArchiveBatch(), 200);
+    }
+}
+// Runs every day at 02:00. Cron: seconds minutes hours day-of-month month day-of-week
+System.schedule('Nightly archive', '0 0 2 * * ?', new NightlyJob());`;
+const eventCode = `// Publish (Order_Event__e is a platform event you define)
+Order_Event__e evt = new Order_Event__e(Order_Id__c = order.Id);
+Database.SaveResult sr = EventBus.publish(evt);
+
+// Subscribe with an Apex trigger
+trigger OrderEventTrigger on Order_Event__e (after insert) {
+    for (Order_Event__e e : Trigger.new) {
+        // react to the event
+    }
+}`;
+---
+
+<ToolLayout
+	slug="async-apex-chooser"
+	title="Future vs Queueable vs Batch Apex: Which Async Apex Should I Use? | SFDX Talk"
+	h1="Future vs Queueable vs Batch Apex: which async Apex should I use?"
+	description="Answer a few questions to choose between @future, Queueable, Batch, Schedulable and platform event Apex, with a comparison table, limits, code skeletons and common mistakes."
+	tldr={tldr}
+	faq={faq}
+	modified={new Date(`${ASYNC_CHOOSER_META.verified}T00:00:00Z`)}
+	source={{
+		name: ASYNC_CHOOSER_META.sourceName,
+		url: ASYNC_CHOOSER_META.source,
+		release: ASYNC_CHOOSER_META.release,
+		apiVersion: ASYNC_CHOOSER_META.apiVersion,
+		verified: ASYNC_CHOOSER_META.verified,
+	}}
+>
+	<section aria-labelledby="chooser" data-ac>
+		<h2 id="chooser">Choose an async approach</h2>
+		<p class="tool-nojs">The wizard needs JavaScript. The comparison table, guidance and code below work without it.</p>
+		<div class="tool-js">
+			<form class="ac-form">
+				<fieldset>
+					<legend>How much data will it process?</legend>
+					<label><input type="radio" name="volume" value="few" checked /> A few records</label>
+					<label><input type="radio" name="volume" value="thousands" /> Thousands of records</label>
+					<label><input type="radio" name="volume" value="millions" /> Millions of records</label>
+				</fieldset>
+				<fieldset>
+					<legend>Where will the async work be started from?</legend>
+					<label><input type="radio" name="context" value="sync" checked /> Synchronous code (trigger, controller, API)</label>
+					<label><input type="radio" name="context" value="queueable" /> A Queueable job</label>
+					<label><input type="radio" name="context" value="batch" /> A batch job</label>
+					<label><input type="radio" name="context" value="future" /> A future method</label>
+				</fieldset>
+				<fieldset>
+					<legend>What else do you need?</legend>
+					<label><input type="checkbox" name="complexTypes" value="1" /> Pass sObjects or custom Apex types</label>
+					<label><input type="checkbox" name="chain" value="1" /> Chain steps or run them in order</label>
+					<label><input type="checkbox" name="callout" value="1" /> Make a callout after DML</label>
+					<label><input type="checkbox" name="monitoring" value="1" /> A job ID and status to monitor</label>
+					<label><input type="checkbox" name="schedule" value="1" /> Run on a recurring schedule</label>
+					<label><input type="checkbox" name="decoupled" value="1" /> React to a data change in a decoupled, event-driven way</label>
+				</fieldset>
+			</form>
+			<p role="status" aria-live="polite" data-ac-summary></p>
+			<ol class="ac-results" data-ac-out></ol>
+			<div class="ac-actions">
+				<button type="button" data-action="copy">Copy link to this result</button>
+				<button type="button" data-action="reset">Reset</button>
+			</div>
+			<p class="ref-note">The ranking is a heuristic: answers add or remove points. Only the exclusions are hard rules. Nothing you select leaves your browser.</p>
+		</div>
+	</section>
+
+	<section aria-labelledby="compare">
+		<h2 id="compare">Comparison of async Apex options</h2>
+		<p>
+			Limits below come from the <a href="/tools/governor-limits/">governor limits reference</a>. All asynchronous Apex also
+			counts toward the <a href="/tools/governor-limits/#daily-async-executions">daily asynchronous executions limit</a>.
+		</p>
+		<div class="table-wrap">
+			<table class="ref-table">
+				<thead>
+					<tr>
+						<th scope="col">Option</th>
+						<th scope="col">Accepts</th>
+						<th scope="col">Chaining</th>
+						<th scope="col">Monitoring</th>
+						<th scope="col">Key limits</th>
+						<th scope="col">Best for</th>
+					</tr>
+				</thead>
+				<tbody>
+					{
+						rows.map((r) => (
+							<tr>
+								<th scope="row">{r.name}</th>
+								<td>{r.takes}</td>
+								<td>{r.chain}</td>
+								<td>{r.monitor}</td>
+								<td>{r.limits}</td>
+								<td>{r.best}</td>
+							</tr>
+						))
+					}
+				</tbody>
+			</table>
+		</div>
+		<p>
+			Limit rows: <a href="/tools/governor-limits/#future-calls">future calls</a>,
+			<a href="/tools/governor-limits/#queueable-jobs">Queueable jobs</a>,
+			<a href="/tools/governor-limits/#batch-concurrent">concurrent batch jobs ({limit('batch-concurrent')})</a>,
+			<a href="/tools/governor-limits/#flex-queue-holding">flex queue ({limit('flex-queue-holding')})</a>,
+			<a href="/tools/governor-limits/#scheduled-classes">scheduled classes</a>.
+		</p>
+	</section>
+
+	<section aria-labelledby="when" class="prose">
+		<h2 id="when">When to use which</h2>
+		<ul>
+			<li><strong>Queueable Apex</strong> is the default for new background work. It accepts sObjects and custom types, returns a job ID, can start another Queueable job, and can use finalizers for follow-up logic.</li>
+			<li><strong>@future</strong> is for small, simple jobs where you only need primitive parameters, mostly in existing code. It cannot chain and gives no job ID.</li>
+			<li><strong>Batch Apex</strong> processes large data sets in chunks through <code>start</code>, <code>execute</code> and <code>finish</code>, with limits reset for each <code>execute</code> call.</li>
+			<li><strong>Schedulable Apex</strong> runs a class on a cron schedule. Keep it thin and let it start a batch or Queueable job.</li>
+			<li><strong>Platform events and Change Data Capture triggers</strong> suit decoupled, event-driven work where publishers do not know their subscribers. Triggers on these events receive batches of up to {eventTriggerBatch()}.</li>
+		</ul>
+		<p>What the chooser recommends for common cases, generated by the same scoring code as the wizard:</p>
+		<ul>
+			{scenarios.map((s) => <li>{s.label}: <strong>{s.top[0].name}</strong>{s.top[1] && <>, then {s.top[1].name}</>}.</li>)}
+		</ul>
+	</section>
+
+	<section aria-labelledby="code" class="prose">
+		<h2 id="code">Code skeletons</h2>
+		<h3>@future method with a callout</h3>
+		<pre class="tool-code"><code>{futureCode}</code></pre>
+		<h3>Queueable with a finalizer</h3>
+		<pre class="tool-code"><code>{queueableCode}</code></pre>
+		<h3>Batch Apex</h3>
+		<pre class="tool-code"><code>{batchCode}</code></pre>
+		<h3>Schedulable Apex</h3>
+		<pre class="tool-code"><code>{schedCode}</code></pre>
+		<h3>Platform event publish and trigger</h3>
+		<pre class="tool-code"><code>{eventCode}</code></pre>
+		<p>
+			Start any of these from a trigger handler rather than the trigger body; see
+			<a href="/docs/apex/trigger-handler-pattern/">the Apex trigger handler pattern</a>.
+		</p>
+	</section>
+
+	<section aria-labelledby="mistakes" class="prose">
+		<h2 id="mistakes">Common mistakes</h2>
+		<ul>
+			<li>Calling a future method or <code>System.enqueueJob</code> inside a loop. Collect the IDs or records first and make one call ({limit('future-calls')} future calls and {limit('queueable-jobs')} enqueued jobs are the synchronous per-transaction limits).</li>
+			<li>Trying to enqueue several jobs from inside a Queueable. Asynchronous Apex can enqueue {limit('queueable-jobs', 'async')}; build a chain.</li>
+			<li>Passing sObjects to a future method. Pass IDs and query inside the method, or use Queueable.</li>
+			<li>Forgetting <code>Database.AllowsCallouts</code> on a Queueable or Batch class that makes callouts.</li>
+			<li>Starting a batch from a trigger for every save, which can exhaust the {limit('batch-concurrent')} concurrent batch slots.</li>
+			<li>Putting heavy logic directly in a Schedulable class instead of starting a batch or Queueable job.</li>
+			<li>Assuming batches or future calls run in a guaranteed order.</li>
+		</ul>
+	</section>
+
+	<section aria-labelledby="refs" class="prose">
+		<h2 id="refs">Official references</h2>
+		<ul>
+			{refs.map(([name, url]) => <li><a href={url} rel="noopener">{name}</a> (Apex Developer Guide)</li>)}
+		</ul>
+	</section>
+
+	<script>
+		import '../../scripts/async-chooser';
+	</script>
+</ToolLayout>
