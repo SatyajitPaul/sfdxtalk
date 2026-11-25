@@ -1,0 +1,146 @@
+---
+// /tools/manifest-merge/: view, compare and merge package.xml manifests in the browser.
+// Explanation and worked examples are static HTML built with the same functions the
+// page script runs (src/lib/tools/manifest.ts).
+import '../../styles/tool-manifest-merge.css';
+import ToolLayout from '../../components/tools/ToolLayout.astro';
+import { MANIFEST_EXAMPLE_A, MANIFEST_EXAMPLE_B, MANIFEST_META } from '../../data/tool-exports/manifest-merge';
+import { diffManifests, diffReport, mergeManifests, parseManifest } from '../../lib/tools/manifest';
+
+const a = parseManifest(MANIFEST_EXAMPLE_A);
+const b = parseManifest(MANIFEST_EXAMPLE_B);
+const exampleDiff = diffReport(diffManifests(a, b));
+const exampleMerge = mergeManifests([a, b], MANIFEST_META.apiVersion).xml;
+
+const faq = [
+	{
+		q: 'How do I merge two package.xml files?',
+		a: 'Paste both manifests into the boxes above and choose Merge. The tool takes the union of members for each metadata type, removes duplicates, sorts types and members, and writes one package.xml. It uses the highest API version found in the two files.',
+	},
+	{
+		q: 'How do I compare two package.xml files?',
+		a: 'Paste the older manifest into box A and the newer one into box B, then choose Compare. The result lists types that were added or removed and, for types present in both, the members that were added or removed. Choose Copy result to paste the report into a pull request.',
+	},
+	{
+		q: 'What happens to the * wildcard when manifests are merged?',
+		a: 'If any input lists * for a type, the merged type is just *, because the wildcard already covers every named member. Not every metadata type supports the wildcard, so check the type in the Metadata API Developer Guide before deploying with it.',
+	},
+	{
+		q: 'Does the order of types and members in a package.xml matter?',
+		a: 'No. Metadata API treats the order as irrelevant. Sorting is a convention that keeps diffs and merges stable, which is why the merged output is sorted.',
+	},
+	{
+		q: 'Which API version does the merged file use?',
+		a: 'The highest valid version element found in the pasted manifests. If none of them has a valid version, the tool uses ' + MANIFEST_META.apiVersion + ', the API version of ' + MANIFEST_META.release + '. Check the version before you deploy.',
+	},
+	{
+		q: 'Can I clean up a single package.xml?',
+		a: 'Yes. Paste one manifest into box A and choose Merge. The tool sorts it, removes duplicate members and drops empty types, and writes the cleaned file.',
+	},
+	{
+		q: 'Does my package.xml leave my browser?',
+		a: 'No. Parsing, comparing and merging all run in your browser and nothing you paste is uploaded. A manifest lists component names only, but remove any names you would not share before posting a diff publicly.',
+	},
+];
+
+const tldr =
+	'Paste one package.xml to view it as a type tree, two to see what was added or removed between them, or two to merge them into one sorted, de-duplicated manifest. It runs in your browser and nothing is uploaded.';
+---
+
+<ToolLayout
+	slug="manifest-merge"
+	title="Merge and Compare package.xml Files Online | SFDX Talk"
+	h1="Merge, compare and view package.xml files"
+	description="Merge several Salesforce package.xml manifests, compare two to see added and removed members, or view one as a tree. Free, runs in your browser, nothing uploaded."
+	tldr={tldr}
+	faq={faq}
+	modified={new Date(`${MANIFEST_META.verified}T00:00:00Z`)}
+	source={{
+		name: MANIFEST_META.sourceName,
+		url: MANIFEST_META.source,
+		release: MANIFEST_META.release,
+		apiVersion: MANIFEST_META.apiVersion,
+		verified: MANIFEST_META.verified,
+	}}
+>
+	<section aria-labelledby="mf-widget" class="mf-tool" data-mf-tool data-version={MANIFEST_META.apiVersion} data-example-a={MANIFEST_EXAMPLE_A} data-example-b={MANIFEST_EXAMPLE_B}>
+		<h2 id="mf-widget">Compare or merge manifests</h2>
+		<p class="tool-nojs">The tool needs JavaScript. The explanation and worked examples below work without it.</p>
+		<div class="tool-js">
+			<div class="mf-grid">
+				<div>
+					<label for="mf-a">Manifest A (older, or the one to view)</label>
+					<textarea id="mf-a" data-mf-a spellcheck="false" autocomplete="off" placeholder="<Package xmlns=&quot;http://soap.sforce.com/2006/04/metadata&quot;>…"></textarea>
+				</div>
+				<div>
+					<label for="mf-b">Manifest B (newer, or the one to merge in)</label>
+					<textarea id="mf-b" data-mf-b spellcheck="false" autocomplete="off" placeholder="<Package xmlns=&quot;http://soap.sforce.com/2006/04/metadata&quot;>…"></textarea>
+				</div>
+			</div>
+			<div class="mf-actions">
+				<button type="button" data-action="compare">Compare A to B</button>
+				<button type="button" data-action="merge">Merge</button>
+				<button type="button" data-action="view">View A as tree</button>
+				<button type="button" data-action="example">Try an example</button>
+				<button type="button" data-action="clear">Clear</button>
+			</div>
+			<p class="mf-status" role="status" aria-live="polite" data-mf-status>Paste a package.xml into box A, and into box B to compare or merge.</p>
+			<p class="mf-warn" data-mf-warn></p>
+			<div class="mf-out" data-mf-out></div>
+		</div>
+	</section>
+
+	<section aria-labelledby="mf-when" class="prose">
+		<h2 id="mf-when">When you need to merge or compare manifests</h2>
+		<p>
+			A <code>package.xml</code> says which components a retrieve or deploy touches. Teams end up with several of them: one per feature branch,
+			one per release, one generated by <code>sf project generate manifest</code> and one written by hand. Three jobs come up again and again.
+		</p>
+		<ul>
+			<li><strong>Combining manifests.</strong> Two features shipped together need one deploy. Merging gives one file with the union of both, with no duplicate members.</li>
+			<li><strong>Reviewing a change.</strong> A pull request edits the manifest and the diff is hard to read because the order moved. Comparing the two files shows only what was really added or removed.</li>
+			<li><strong>Cleaning up.</strong> A hand-edited file has duplicate members, empty types and mixed ordering. One pass through the merge produces a sorted, de-duplicated file.</li>
+		</ul>
+		<p>
+			The tool reads the <code>types</code>, <code>members</code>, <code>name</code> and <code>version</code> elements, ignores comments and
+			whitespace, and decodes XML entities such as <code>&amp;amp;</code>. If a file is not a manifest, or a type has no name, it tells you instead of failing silently.
+		</p>
+		<h3>How merging treats the wildcard</h3>
+		<p>
+			A member of <code>*</code> asks for all components of a type. When any input has <code>*</code> for a type, the merged type is just
+			<code>*</code>, since the wildcard already includes every named member. The compare view flags the case where one side uses
+			<code>*</code> and the other names members, because the two files then ask for different things even if the named members are a subset. Not every metadata type
+			supports the wildcard, so read the type's page in the
+			<a href={MANIFEST_META.source} rel="noopener">Metadata API Developer Guide</a> before deploying with it.
+		</p>
+		<h3>Common mistakes</h3>
+		<ul>
+			<li>Merging manifests built for different API versions and not checking the result. The merged file takes the highest version; confirm your org supports it.</li>
+			<li>Treating a clean diff as proof that a deploy is safe. A manifest names components; it does not check dependencies or test coverage.</li>
+			<li>Expecting the tool to read your org. It only works with the text you paste. Use <code>sf project retrieve start --manifest package.xml</code> to act on a manifest.</li>
+		</ul>
+	</section>
+
+	<section aria-labelledby="mf-diff-ex">
+		<h2 id="mf-diff-ex">Worked example: compare</h2>
+		<p>
+			Manifest A lists two Apex classes and a flow at API 67.0. Manifest B lists a different pair of Apex classes and a custom field at API {MANIFEST_META.apiVersion}.
+			This report was produced at build time by the same code the tool runs. <code>+</code> was added, <code>-</code> was removed and <code>~</code> changed.
+		</p>
+		<pre class="tool-code"><code>{exampleDiff}</code></pre>
+	</section>
+
+	<section aria-labelledby="mf-merge-ex">
+		<h2 id="mf-merge-ex">Worked example: merge</h2>
+		<p>Merging the same two manifests keeps every member once, sorts them and uses the higher version.</p>
+		<pre class="tool-code"><code>{exampleMerge}</code></pre>
+		<p>
+			To create a manifest from scratch, use the <a href="/tools/package-xml-generator/">package.xml generator</a>. For the retrieve and deploy commands that use the result, see the
+			<a href="/docs/sf-cli/salesforce-cli-reference-guide/">Salesforce CLI reference guide</a>.
+		</p>
+	</section>
+
+	<script>
+		import '../../scripts/manifest-merge';
+	</script>
+</ToolLayout>

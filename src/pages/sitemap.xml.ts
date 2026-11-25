@@ -17,6 +17,7 @@ import { categoryUrl } from '../lib/schema';
 import { abs } from '../lib/site';
 import { PROMPTS_INDEX_URL, getPrompts, promptUrl, promptsHubIndexable } from '../lib/prompts';
 import { SKILLS_INDEX_URL, getSkills, skillUrl, skillsHubIndexable } from '../lib/skills';
+import { ERRORS, ERRORS_META } from '../data/salesforce-errors';
 import { toolLastmod } from '../lib/tool-exports';
 import { TOOLS_INDEX_URL, liveTools, toolUrl, toolsHubIndexable } from '../lib/tools';
 
@@ -29,7 +30,7 @@ export const GET: APIRoute = async () => {
 		{ path: DOCS_INDEX_URL, lastmod: all },
 		...byCategory(docs).map((g) => ({ path: categoryUrl(g.category), lastmod: latestUpdate(g.docs) })),
 		// The tools hub is noindex until a tool is live, and noindex URLs stay out of the sitemap.
-		...(toolsHubIndexable() ? [{ path: TOOLS_INDEX_URL, lastmod: new Date(Math.max(...liveTools().map((t) => toolLastmod(t.slug)?.getTime() ?? 0))) }, ...liveTools().map((t) => ({ path: toolUrl(t), lastmod: toolLastmod(t.slug) }))] : []),
+		...(toolsHubIndexable() ? [{ path: TOOLS_INDEX_URL, lastmod: new Date(Math.max(...liveTools().map((t) => toolLastmod(t.slug)?.getTime() ?? 0))) }, ...liveTools().map((t) => ({ path: toolUrl(t), lastmod: toolLastmod(t.slug) })), ...(liveTools().some((t) => t.slug === 'salesforce-error-decoder') ? ERRORS.map((e) => ({ path: `/tools/errors/${e.id}/`, lastmod: new Date(`${ERRORS_META.verified}T00:00:00Z`) })) : [])] : []),
 		// Skills and prompts hubs are noindex until they list an item.
 		...(skillsHubIndexable()
 			? [{ path: SKILLS_INDEX_URL, lastmod: new Date(`${getSkills()[0].updated}T00:00:00Z`) }, ...getSkills().map((s) => ({ path: skillUrl(s), lastmod: new Date(`${s.updated}T00:00:00Z`) }))]

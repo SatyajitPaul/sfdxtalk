@@ -260,6 +260,59 @@ export function toolGraph(t: ToolInput) {
 	);
 }
 
+interface ErrorPageInput {
+	path: string;
+	title: string;
+	description: string;
+	/** Error code or exception name. */
+	code: string;
+	tldr: string;
+	crumbs: Crumb[];
+	faq: { q: string; a: string }[];
+	modified: Date;
+	citations: string[];
+}
+
+/** Per-error page: TechArticle + FAQPage + BreadcrumbList, built only from what the page shows. */
+export function errorGraph(e: ErrorPageInput) {
+	const url = abs(e.path);
+	const pageId = `${url}#webpage`;
+	return graph(
+		organization(),
+		website(),
+		{
+			...webPage({ path: e.path, title: e.title, description: e.description, crumbs: e.crumbs, modified: e.modified }),
+			mainEntity: ref(`${url}#article`),
+			speakable: { '@type': 'SpeakableSpecification', cssSelector: ['.tldr'] },
+		},
+		breadcrumbList(url, e.crumbs),
+		{
+			'@type': 'TechArticle',
+			'@id': `${url}#article`,
+			headline: e.title,
+			about: e.code,
+			description: e.description,
+			abstract: e.tldr,
+			inLanguage: SITE.language,
+			isPartOf: ref(pageId),
+			author: ref(ORG_ID),
+			publisher: ref(ORG_ID),
+			dateModified: e.modified.toISOString(),
+			license: SITE.contentLicense.url,
+			citation: e.citations.map((href) => ({ '@type': 'WebPage', url: href })),
+		},
+		{
+			'@type': 'FAQPage',
+			'@id': `${url}#faq`,
+			url: `${url}#faq`,
+			name: `${e.code}: frequently asked questions`,
+			inLanguage: SITE.language,
+			isPartOf: ref(pageId),
+			mainEntity: e.faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+		},
+	);
+}
+
 const MIT_URL = 'https://opensource.org/license/mit';
 
 interface LibraryItemInput {

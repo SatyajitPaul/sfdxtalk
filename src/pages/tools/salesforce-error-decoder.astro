@@ -129,7 +129,7 @@ const tldr =
 				<h2 id={`cat-${g.cat}`}>{g.label}</h2>
 				{g.items.map((e) => (
 					<article class="err-entry" id={e.id}>
-						<h3>{e.code}</h3>
+						<h3><a href={`/tools/errors/${e.id}/`}>{e.code}</a></h3>
 						{e.typicalMessage && <p class="err-msg">Typical message: <code>{e.typicalMessage}</code></p>}
 						<h4>Cause</h4>
 						<p class="err-cause">{e.cause}</p>

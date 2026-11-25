@@ -135,7 +135,7 @@ export const TOOLS: readonly Tool[] = [
 		name: 'package.xml Viewer, Diff and Merge',
 		tagline: 'View a manifest as a tree, compare two, merge and de-duplicate them.',
 		group: 'metadata',
-		status: 'planned',
+		status: 'live',
 		order: 10,
 		primaryQuery: 'merge package.xml files',
 		relatedCategories: ['metadata', 'devops'],

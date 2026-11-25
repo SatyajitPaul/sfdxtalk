@@ -1,0 +1,28 @@
+.mf-tool label { display: block; margin-bottom: var(--space-2); font-weight: 600; }
+.mf-tool textarea {
+	width: 100%; box-sizing: border-box; min-height: 11rem; padding: var(--space-3);
+	border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: inherit;
+	font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 0.8rem; white-space: pre;
+}
+.mf-tool textarea:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.mf-grid { display: grid; gap: var(--space-4); grid-template-columns: 1fr; }
+@media (min-width: 52rem) { .mf-grid { grid-template-columns: 1fr 1fr; } }
+.mf-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.mf-actions button {
+	padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius);
+	background: var(--surface); color: inherit; font: inherit; cursor: pointer;
+}
+.mf-actions button:hover { border-color: var(--link); }
+.mf-actions button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.mf-actions button[data-action='compare'], .mf-actions button[data-action='merge'] { border-color: var(--link); font-weight: 600; }
+.mf-status { margin: var(--space-3) 0 0; color: var(--text-muted); font-size: var(--step--1); }
+.mf-warn { margin: var(--space-2) 0 0; font-size: var(--step--1); color: var(--text-muted); }
+.mf-out { margin-top: var(--space-4); }
+.mf-out h3 { margin: var(--space-3) 0 var(--space-2); font-size: var(--step-0); }
+.mf-out ul { margin: 0; padding-left: var(--space-5); }
+.mf-out li { font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); font-size: 0.85rem; word-break: break-word; }
+.mf-add { color: var(--success, #1a7f37); }
+.mf-del { color: var(--danger, #b42318); }
+.mf-out details { margin: var(--space-2) 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.mf-out summary { cursor: pointer; font-weight: 600; }
+.mf-out textarea { min-height: 9rem; }

@@ -1,0 +1,102 @@
+---
+// /tools/errors/{id}/: one page per curated error in the decoder dataset.
+// Everything is rendered from src/data/salesforce-errors.ts, so the page, the
+// decoder and the markdown export cannot disagree.
+import '../../../styles/tools.css';
+import '../../../styles/tool-salesforce-error-decoder.css';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../../components/Breadcrumbs.astro';
+import { CATEGORY_LABELS, ERRORS, ERRORS_META } from '../../../data/salesforce-errors';
+import { errorGraph, type Crumb } from '../../../lib/schema';
+import { SITE } from '../../../lib/site';
+import { TOOLS_INDEX_URL } from '../../../lib/tools';
+
+export function getStaticPaths() {
+	return ERRORS.map((e) => ({ params: { id: e.id }, props: { id: e.id } }));
+}
+
+const { id } = Astro.props;
+const e = ERRORS.find((x) => x.id === id)!;
+const cat = CATEGORY_LABELS[e.category];
+const path = `/tools/errors/${e.id}/`;
+const title = `${e.code}: Meaning and How to Fix It | SFDX Talk`;
+const description = `${e.cause.slice(0, 150).replace(/\s+\S*$/, '')}... Causes and fix steps for the Salesforce error ${e.code}.`;
+const tldr = `${e.code}: ${e.cause} Start with: ${e.fixSteps[0]}`;
+const crumbs: Crumb[] = [
+	{ name: 'Home', path: '/' },
+	{ name: 'Tools', path: TOOLS_INDEX_URL },
+	{ name: 'Error decoder', path: '/tools/salesforce-error-decoder/' },
+	{ name: e.code, path },
+];
+const faq = [
+	{ q: `What does ${e.code} mean in Salesforce?`, a: e.cause },
+	{ q: `How do I fix ${e.code}?`, a: e.fixSteps.map((s, i) => `${i + 1}. ${s}`).join(' ') },
+];
+const siblings = ERRORS.filter((x) => x.category === e.category && x.id !== e.id).slice(0, 6);
+const modified = new Date(`${ERRORS_META.verified}T00:00:00Z`);
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	jsonLd={errorGraph({ path, title, description, code: e.code, tldr, crumbs, faq, modified, citations: [ERRORS_META.source, ...(e.refs?.map((r) => r.url) ?? [])] })}
+>
+	<div class="page-narrow tool-page">
+		<Breadcrumbs crumbs={crumbs} />
+		<h1>{e.code}: meaning and how to fix it</h1>
+		<p class="tool-meta">
+			<span class="badge">{cat.label}</span>
+			<span>Checked against the official docs on <time datetime={ERRORS_META.verified}>{ERRORS_META.verified}</time></span>
+			<span>Source: <a href={ERRORS_META.source} rel="noopener">{ERRORS_META.sourceName}</a></span>
+		</p>
+		<div class="tldr">
+			<p class="tldr-label">Quick answer</p>
+			<p>{tldr}</p>
+		</div>
+
+		<section class="prose err-entry" aria-labelledby="cause">
+			{e.typicalMessage && <p class="err-msg">Typical message: <code>{e.typicalMessage}</code></p>}
+			<h2 id="cause">Cause</h2>
+			<p>{e.cause}</p>
+			<h2 id="fix">How to fix {e.code}</h2>
+			<ol>{e.fixSteps.map((s) => <li>{s}</li>)}</ol>
+			{e.example && <pre class="tool-code"><code>{e.example.code}</code></pre>}
+			{(e.refs?.length || e.internal) && (
+				<ul class="err-links">
+					{e.internal && <li><a href={e.internal.href}>{e.internal.label}</a></li>}
+					{e.refs?.map((r) => <li><a href={r.url} rel="noopener">{r.label}</a></li>)}
+				</ul>
+			)}
+		</section>
+
+		<p>
+			Have a different message? <a href="/tools/salesforce-error-decoder/">Paste it into the error decoder</a>, which
+			matches it against {ERRORS.length} common Salesforce errors in your browser.
+		</p>
+
+		<section class="prose" aria-labelledby="tool-faq">
+			<h2 id="tool-faq">Frequently asked questions</h2>
+			{faq.map((f) => (<><h3>{f.q}</h3><p>{f.a}</p></>))}
+		</section>
+
+		{siblings.length > 0 && (
+			<section aria-labelledby="more-errors">
+				<h2 id="more-errors">More {cat.label} errors</h2>
+				<ul class="related-list">
+					{siblings.map((s) => (
+						<li>
+							<a href={`/tools/errors/${s.id}/`}>{s.code}</a>
+							{s.typicalMessage && <p>{s.typicalMessage}</p>}
+						</li>
+					))}
+					<li><a href="/tools/salesforce-error-decoder/">All errors in the decoder</a></li>
+				</ul>
+			</section>
+		)}
+
+		<p class="tool-disclaimer">
+			{SITE.disclaimer} Message text varies slightly by release and context, so confirm against the
+			<a href={ERRORS_META.source} rel="noopener">official page</a> before relying on it.
+		</p>
+	</div>
+</BaseLayout>

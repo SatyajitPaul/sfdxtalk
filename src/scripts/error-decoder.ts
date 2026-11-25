@@ -24,7 +24,7 @@ if (root && dataEl) {
 			if (!section) continue;
 			const li = document.createElement('li');
 			const a = document.createElement('a');
-			a.href = `#${h.id}`;
+			a.href = `/tools/errors/${h.id}/`;
 			a.textContent = section.querySelector('h3')?.textContent ?? h.id;
 			const p = document.createElement('p');
 			p.textContent = section.querySelector('.err-cause')?.textContent ?? '';

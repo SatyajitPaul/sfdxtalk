@@ -232,7 +232,9 @@ Every tool page must have all of these before its status becomes `live`:
 | 5 | package.xml Generator | **Live** (571 metadata types via `/tools/package-xml-types.json`) |
 | 6 | Async Apex Chooser | **Live** (limits read from `governor-limits.ts`) |
 | 7 | AI Context File Generator | **Live** (49 rules, 4 targets) |
-| 8–10 | Apex Bulk-Safety Checker, Debug Log Analyzer, Manifest Diff/Merge | Planned |
+| 8–9 | Apex Bulk-Safety Checker, Debug Log Analyzer | Planned |
+| 10 | package.xml Viewer, Diff & Merge (`/tools/manifest-merge/`) | **Live** (2026-11-25; logic in `src/lib/tools/manifest.ts`, 8 tests) |
+| — | Per-error pages `/tools/errors/{id}/` (45, from the decoder dataset) | **Live** (2026-11-25; in sitemap, linked from the decoder) |
 
 Open items from the §10 contract for tool #1: per-tool share image (uses the default site image for now) and a link to the tool from related articles (needs article `related` support for tools).
 
@@ -245,3 +247,49 @@ Tools #3 to #7 were built by parallel agents following `docs/TOOL-BUILD-BRIEF.md
 Budget: `check:budget` now measures JS per page (6 KB normal, 24 KB for `/tools/`). The three oversized metadata hub pages still fail the HTML limit.
 
 Needs a human decision/check: error-decoder Apex and deployment message wording comes from well-known wording, not an opened official page; the SOQL linter's 50-field threshold is our own heuristic.
+
+## 13. Production audit and next build plan (2026-11-25)
+
+Checked https://sfdxtalk.com/tools/ and each tool URL (all return 200).
+
+**Live in production (7):** Governor Limits Reference, Salesforce ID Converter, SOQL Formatter & Checker, Error Message Decoder (45 errors), package.xml Generator, Async Apex Chooser, AI Context File Generator.
+**Shown as "Coming soon" on the hub (3):** Apex Bulk-Safety Checker, Debug Log Analyzer, package.xml Viewer/Diff/Merge.
+**In GROWTH-PLAN but not on the hub at all:** B6 release diff (T33), B7 PB/Flow migration planner (T20), A2 Copy for AI, A1 MCP server.
+
+### Priority 0: make existing tools earn traffic (before new tools)
+| Item | Why | Effort |
+|---|---|---|
+| Per-error pages `/tools/errors/{code}/` for the 45 decoder entries, then grow to 100 | Highest search intent; GROWTH-PLAN targets 100 error pages | M |
+| Per-tool share images + article `related` links to tools | Open items from §10 contract | S |
+| Fix the 3 oversized metadata hub pages failing `check:budget` | CI blocker | S |
+| Submit tool URLs in Search Console, record a baseline | Needed to rank wave 2 by data | S |
+
+### Wave 2 (publish next, in this order)
+| # | Tool | Slug | Why now | Effort |
+|---|---|---|---|---|
+| 1 | package.xml Viewer, Diff & Merge (T13) | `package-xml-diff-merge` | Already on hub as coming soon; reuses `package-xml.ts` | S |
+| 2 | Metadata Type Finder (T14) | `metadata-type-finder` | Uses the 571-type corpus, strongest moat; "which type do I deploy" | S |
+| 3 | Apex Bulk-Safety Checker (T5) | `apex-bulk-safety-checker` | Coming soon on hub; "review AI-generated Apex" angle; conservative heuristics only | L |
+| 4 | Process Builder to Flow Migration Planner (T20 + B7) | `process-builder-to-flow-planner` | Migration wave demand; questionnaire, no parsing | S |
+| 5 | API Chooser (T21) | `salesforce-api-chooser` | Cheap shareable decision tool, same pattern as async chooser | S |
+| 6 | Debug Log Analyzer (T8) | `apex-debug-log-analyzer` | Largest build and crowded; ship after traction data. Web Worker, plain-English summary | L |
+
+### Wave 3 (Feb, with Spring '27)
+| # | Tool | Notes |
+|---|---|---|
+| 7 | Release Diff for Developers (T33/B6) | Needs maintained data; pairs with `/releases/spring-27/` |
+| 8 | Check AI-Generated Apex (T29) | Extends the bulk-safety checker with a curated hallucination list (A5) |
+| 9 | Deploy Error Decoder (T11) | Reuses decoder dataset and matcher |
+| 10 | Stack Trace Explainer (T10) | Thin layer on the decoder |
+| 11 | SOQL to Apex Converter (T3) | Small; promotes `WITH USER_MODE` and binds |
+| 12 | JSON to Apex Class Generator (T26) | Commonly searched |
+| 13 | Test Class Skeleton Generator (T6) | Pairs with Testing content |
+| 14 | `sf` Command Builder (T15) | sfdx-to-sf transition |
+
+Defer (P2): Apex formatter, formula tester, permission set diff, CSV cleaner, date helper, Agentforce checker, token estimator, cert planner.
+
+### Not a /tools/ page
+A1 MCP server and A2 Copy for AI button. Separate builds; tool logic in `src/lib/tools/` is reusable for MCP (`lookup_limit`, `decode_error`, `convert_id`, `build_package_xml`).
+
+### Rules for every build
+Follow `docs/TOOL-BUILD-BRIEF.md` and the §10 contract. One tool per change set, `pnpm test` and `pnpm build` green, status flipped to `live` in `src/lib/tools.ts` only when the page exists. Register new tools (not yet on the hub: #2, #4, #5+) in `tools.ts` as `planned` first.
